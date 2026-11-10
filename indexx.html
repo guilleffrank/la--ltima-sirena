@@ -1,0 +1,2828 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>La Última Sirena del Océano 3D - Nivel 1: El Arrecife Perdido</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js 3D Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Assets Base64 Fallback -->
+    <script src="assets_base64.js"></script>
+    
+    <!-- Fuentes estilizadas -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Cinzel:wght@700;900&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: default;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #010a18;
+            font-family: 'Nunito', sans-serif;
+            color: #e0f2fe;
+            width: 100vw;
+            height: 100vh;
+            cursor: default !important;
+        }
+
+        #game-wrapper {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #010a18;
+            overflow: hidden;
+            cursor: default !important;
+        }
+
+        #three-container {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: default !important;
+        }
+
+        button, .btn-sea, .hud-glass, [role="button"], a {
+            cursor: pointer !important;
+        }
+
+        /* Capas de Pantallas (Overlays) */
+        .overlay-screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, rgba(3, 25, 53, 0.94) 0%, rgba(1, 8, 20, 0.98) 100%);
+            backdrop-filter: blur(12px);
+            z-index: 60;
+            padding: 24px;
+            text-align: center;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .overlay-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        /* Botones Marinos con brillo */
+        .btn-sea {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
+            border: 2px solid #7dd3fc;
+            color: #ffffff;
+            font-weight: 800;
+            border-radius: 9999px;
+            padding: 12px 28px;
+            font-size: 1.05rem;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(14, 165, 233, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            pointer-events: auto;
+        }
+        .btn-sea:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 8px 25px rgba(56, 189, 248, 0.7), inset 0 1px 4px rgba(255, 255, 255, 0.8);
+            border-color: #bae6fd;
+        }
+        .btn-sea:active {
+            transform: translateY(1px) scale(0.98);
+        }
+
+        .btn-secondary {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1.5px solid rgba(56, 189, 248, 0.4);
+            color: #bae6fd;
+        }
+        .btn-secondary:hover {
+            background: rgba(14, 165, 233, 0.25);
+            border-color: #38bdf8;
+            color: #ffffff;
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border-color: #fde68a;
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.45);
+        }
+        .btn-gold:hover {
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.75);
+            border-color: #fff;
+        }
+
+        /* HUD Submarino Translúcido */
+        #hud-container {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 18px 22px;
+        }
+
+        .hud-glass {
+            background: rgba(3, 20, 44, 0.82);
+            backdrop-filter: blur(10px);
+            border: 1.5px solid rgba(56, 189, 248, 0.4);
+            border-radius: 18px;
+            padding: 10px 18px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(56, 189, 248, 0.1);
+            pointer-events: auto;
+        }
+
+        /* Cuadro de Diálogo Mejorado */
+        #dialogue-box {
+            position: absolute;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 92%;
+            max-width: 820px;
+            background: linear-gradient(135deg, rgba(2, 20, 45, 0.96) 0%, rgba(3, 35, 75, 0.94) 100%);
+            border: 2px solid #38bdf8;
+            border-radius: 22px;
+            box-shadow: 0 0 40px rgba(56, 189, 248, 0.55), inset 0 0 25px rgba(14, 165, 233, 0.25);
+            z-index: 100;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            pointer-events: auto;
+            backdrop-filter: blur(14px);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            animation: popUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #dialogue-box.hidden {
+            display: none !important;
+        }
+
+        @keyframes popUp {
+            0% { transform: translate(-50%, 30px) scale(0.92); opacity: 0; }
+            100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+        }
+
+        .dialogue-portrait {
+            width: 88px;
+            height: 88px;
+            border-radius: 18px;
+            border: 2px solid #7dd3fc;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: #031e3d;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+        }
+        .dialogue-portrait img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Banner de Notificaciones */
+        #game-toast {
+            position: absolute;
+            top: 85px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(3, 105, 161, 0.95), rgba(30, 27, 75, 0.95));
+            border: 2px solid #38bdf8;
+            border-radius: 9999px;
+            padding: 10px 28px;
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.6);
+            z-index: 95;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #game-toast.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translate(-50%, -20px);
+        }
+
+        .title-ancient {
+            font-family: 'Cinzel', serif;
+            letter-spacing: 2px;
+            background: linear-gradient(180deg, #ffffff 0%, #a5f3fc 60%, #38bdf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 25px rgba(56, 189, 248, 0.6);
+        }
+
+        .fragment-slot {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            border: 2px dashed rgba(56, 189, 248, 0.35);
+            background: rgba(3, 18, 38, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .fragment-slot.active {
+            border-style: solid;
+            box-shadow: 0 0 16px currentColor;
+            transform: scale(1.08);
+        }
+        .fragment-slot img {
+            width: 82%;
+            height: 82%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 6px currentColor);
+        }
+
+        #atk-visual-cue {
+            position: absolute;
+            top: 48%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease-out;
+            font-size: 26px;
+            font-weight: 900;
+            color: #7dd3fc;
+            text-shadow: 0 0 25px #38bdf8, 0 0 50px #0284c7;
+            z-index: 25;
+            letter-spacing: 1px;
+        }
+
+        .wardrobe-tab {
+            padding: 8px 20px;
+            border-radius: 9999px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1.5px solid rgba(56, 189, 248, 0.3);
+            background: rgba(15, 23, 42, 0.7);
+            color: #94a3b8;
+        }
+        .wardrobe-tab.active {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            border-color: #7dd3fc;
+            color: #ffffff;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(125, 211, 252, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            pointer-events: none;
+            z-index: 20;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-wrapper">
+    <!-- Lienzo 3D de WebGL con Three.js -->
+    <div id="three-container"></div>
+    <div id="crosshair"></div>
+    <div id="atk-visual-cue">💫 ¡COLETAZO!</div>
+
+    <!-- Notificación Flotante -->
+    <div id="game-toast" class="hidden" onclick="this.classList.add('hidden')">
+        <span class="text-2xl">✨</span>
+        <div id="game-toast-text" class="text-sm font-bold text-white">¡Fragmento Mágico Obtenido!</div>
+        <span class="text-xs text-sky-300 ml-2 border border-sky-400/40 px-2 py-0.5 rounded-full">✕</span>
+    </div>
+
+    <!-- ==================== HUD 3D COMPLETO ==================== -->
+    <div id="hud-container" class="hidden">
+        <!-- Barra Superior -->
+        <div class="flex justify-between items-start w-full gap-3">
+            <!-- Izquierda: Salud y Barra de Impulso -->
+            <div class="hud-glass flex flex-col gap-1.5 min-w-[170px]">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs uppercase tracking-wider text-cyan-300 font-extrabold">Salud:</span>
+                    <div id="hud-hearts" class="flex gap-1 text-xl">❤️❤️❤️</div>
+                </div>
+                <!-- Barra de Dash -->
+                <div class="flex items-center gap-2">
+                    <span class="text-xs uppercase tracking-wider text-sky-400 font-bold">Impulso:</span>
+                    <div class="w-32 h-2.5 bg-blue-950/90 rounded-full border border-sky-500/40 overflow-hidden">
+                        <div id="hud-dash-bar" class="h-full bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-300 rounded-full transition-all duration-75" style="width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Centro: Brújula 3D y Objetivo -->
+            <div class="hud-glass text-center max-w-lg px-6 flex flex-col items-center">
+                <div id="hud-level-title" class="font-extrabold text-cyan-200 text-sm tracking-wider uppercase">NIVEL 1: EL ARRECIFE PERDIDO</div>
+                <div id="hud-compass" class="flex items-center gap-2 mt-1">
+                    <span id="compass-arrow" class="text-lg text-amber-400 animate-pulse">🧭</span>
+                    <span id="compass-indicator" class="text-xs font-bold text-amber-300">Buscando fragmentos...</span>
+                </div>
+            </div>
+
+            <!-- Derecha: Fragmentos + Perlas + Botón Música + Pausa -->
+            <div class="hud-glass flex items-center gap-3">
+                <!-- Ranuras de Fragmentos -->
+                <div class="flex items-center gap-1.5 mr-2" title="3 Fragmentos de Perla Mágica requeridos">
+                    <div id="slot-cristal-cian" class="fragment-slot text-cyan-400 opacity-40" title="Fragmento Cian de la Sabiduría">
+                        <img src="sprites/cristal_cian.png" onerror="if(window.GAME_ASSETS_BASE64) this.src=window.GAME_ASSETS_BASE64.cristal_cian;" alt="Cian">
+                    </div>
+                    <div id="slot-cristal-rosa" class="fragment-slot text-pink-400 opacity-40" title="Fragmento Rosa del Corazón">
+                        <img src="sprites/cristal_rosa.png" onerror="if(window.GAME_ASSETS_BASE64) this.src=window.GAME_ASSETS_BASE64.cristal_rosa;" alt="Rosa">
+                    </div>
+                    <div id="slot-cristal-violeta" class="fragment-slot text-purple-400 opacity-40" title="Fragmento Violeta del Abismo">
+                        <img src="sprites/cristal_violeta.png" onerror="if(window.GAME_ASSETS_BASE64) this.src=window.GAME_ASSETS_BASE64.cristal_violeta;" alt="Violeta">
+                    </div>
+                </div>
+
+                <!-- Perlas -->
+                <div class="flex items-center gap-1 bg-slate-900/60 px-2.5 py-1 rounded-full border border-amber-400/30" title="Perlas marinas acumuladas">
+                    <span class="text-base">⚪</span>
+                    <span id="hud-pearls" class="font-bold text-amber-300 text-sm">0</span>
+                </div>
+
+                <!-- Botón de Música Activar / Desactivar -->
+                <button id="btn-toggle-music" class="hud-glass px-3 py-1.5 text-xs font-black hover:bg-sky-500/30 text-amber-300 cursor-pointer pointer-events-auto flex items-center gap-1.5 rounded-xl border border-amber-400/40 shadow-md transition-all active:scale-95" title="Activar / Desactivar Música [Tecla M]">
+                    <span id="music-icon">🎵</span>
+                    <span id="music-status-text">Música: ON</span>
+                </button>
+
+                <!-- Botón Pausa Siempre Visible con Tecla P destacada -->
+                <button id="btn-pause" class="hud-glass px-3.5 py-1.5 text-xs font-black hover:bg-sky-500/30 text-amber-200 cursor-pointer pointer-events-auto rounded-xl border border-amber-400/60 shadow-lg transition-all active:scale-95 flex items-center gap-2 bg-blue-950/85" title="Pausar el juego inmediatamente [Tecla P o ESC]">
+                    <span>⏸️</span>
+                    <span class="tracking-wider uppercase font-black text-amber-200">Pausa</span>
+                    <kbd class="bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded font-mono font-black text-[11px] shadow">P</kbd>
+                </button>
+            </div>
+        </div>
+
+        <!-- Notificación de Vista Fija / Flecha -->
+        <div id="pointerlock-hint" class="hidden absolute top-16 left-1/2 -translate-x-1/2 bg-sky-950/95 border border-cyan-400 text-cyan-200 text-xs font-bold px-4 py-1.5 rounded-full shadow-xl pointer-events-none z-50">
+            🎯 Vista fija activada • Presiona <kbd class="bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded font-mono font-bold">P</kbd> o <kbd class="bg-sky-900 text-white px-1.5 py-0.5 rounded font-mono">ESC</kbd> para recuperar la flecha
+        </div>
+
+        <!-- Barra Inferior: Guía de Controles Verificados -->
+        <div class="flex justify-between items-end w-full">
+            <div class="hud-glass flex flex-wrap gap-2 text-xs">
+                <div class="inline-flex items-center gap-1.5 bg-blue-950/80 px-2.5 py-1 rounded-lg border border-sky-400/30">
+                    <kbd class="bg-sky-900/90 text-cyan-200 px-1.5 py-0.5 rounded font-mono font-bold">A / D</kbd> Izquierda / Derecha
+                </div>
+                <div class="inline-flex items-center gap-1.5 bg-blue-950/80 px-2.5 py-1 rounded-lg border border-sky-400/30">
+                    <kbd class="bg-sky-900/90 text-cyan-200 px-1.5 py-0.5 rounded font-mono font-bold">W / S</kbd> Adelante / Atrás
+                </div>
+                <div class="inline-flex items-center gap-1.5 bg-blue-950/80 px-2.5 py-1 rounded-lg border border-sky-400/30">
+                    <kbd class="bg-sky-900/90 text-cyan-200 px-1.5 py-0.5 rounded font-mono font-bold">Arrastrar Ratón</kbd> Girar Vista 360° 🔄
+                </div>
+                <div class="inline-flex items-center gap-1.5 bg-blue-950/80 px-2.5 py-1 rounded-lg border border-sky-400/30">
+                    <kbd class="bg-sky-900/90 text-cyan-200 px-1.5 py-0.5 rounded font-mono font-bold">Clic / Z</kbd> Coletazo 3D 💫
+                </div>
+                <div class="inline-flex items-center gap-1.5 bg-blue-950/80 px-2.5 py-1 rounded-lg border border-sky-400/30">
+                    <kbd class="bg-sky-900/90 text-cyan-200 px-1.5 py-0.5 rounded font-mono font-bold">Espacio</kbd> Impulso 💨
+                </div>
+                <div class="inline-flex items-center gap-1.5 bg-blue-950/80 px-2.5 py-1 rounded-lg border border-sky-400/30">
+                    <kbd class="bg-sky-900/90 text-cyan-200 px-1.5 py-0.5 rounded font-mono font-bold">E / Q</kbd> Subir / Bajar
+                </div>
+                <div class="inline-flex items-center gap-1.5 bg-amber-950/80 px-2.5 py-1 rounded-lg border border-amber-400/50 text-amber-200 font-bold shadow-sm">
+                    <kbd class="bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded font-mono font-black">P</kbd> Pausa ⏸️
+                </div>
+            </div>
+
+            <button id="btn-toggle-pointerlock" class="hud-glass text-xs text-sky-200 hover:text-white hover:bg-sky-500/20 px-3.5 py-1.5 flex items-center gap-1.5 cursor-pointer pointer-events-auto rounded-xl border border-sky-400/30 shadow-md transition-all active:scale-95" title="Fijar vista al ratón para modo libre o recuperar la flecha">
+                <span>🎯</span>
+                <span id="pointerlock-text">Fijar Cámara</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== CAJA DE DIÁLOGO INTRODUCTORIA ==================== -->
+    <div id="dialogue-box" class="hidden">
+        <div class="dialogue-portrait">
+            <img id="dialogue-portrait-img" src="sprites/sirena_retrato.png" onerror="if(window.GAME_ASSETS_BASE64) this.src=window.GAME_ASSETS_BASE64.sirena_retrato; else this.src='sirena_retrato.png';" alt="Sirena">
+        </div>
+        <div class="flex-1 text-left">
+            <div class="flex justify-between items-center mb-1">
+                <div id="dialogue-speaker" class="font-black text-cyan-300 text-sm tracking-wider uppercase">Sirena · Guardiana del Mar</div>
+                <button id="dialogue-close-x" class="text-sky-300/70 hover:text-white text-base px-2 py-0.5 rounded-full hover:bg-sky-500/20" title="Cerrar cartel">✕</button>
+            </div>
+            <div id="dialogue-text" class="text-slate-100 text-sm sm:text-base leading-relaxed">
+                El Arrecife Perdido está sumido en la penumbra. Tres fragmentos de perla mágica están ocultos entre los corales. Usa A para nadar a la izquierda, D a la derecha y el ratón para orientar tu vista libremente.
+            </div>
+            <div class="text-[11px] text-sky-300/80 mt-2 flex items-center gap-2 italic">
+                <span>💡 [A] Izquierda • [D] Derecha • Tecla [P] Pausa • Arrastra el ratón para rotar la cámara • Clic para Coletazo.</span>
+            </div>
+        </div>
+        <button id="dialogue-next" class="btn-sea py-2 px-5 text-xs font-black self-end whitespace-nowrap shadow-lg">
+            ¡A Nadar! ➔
+        </button>
+    </div>
+
+    <!-- ==================== PANTALLA: MENÚ PRINCIPAL ==================== -->
+    <div id="screen-menu" class="overlay-screen" style="background-image: radial-gradient(circle at center, rgba(3, 25, 53, 0.88) 0%, rgba(1, 8, 20, 0.96) 100%), url('Gemini_Generated_Image_5nh80l5nh80l5nh8.jpg'); background-size: cover; background-position: center;">
+        <div class="max-w-2xl bg-slate-950/80 p-8 rounded-3xl border border-sky-400/40 backdrop-blur-md shadow-2xl">
+            <div class="inline-block px-4 py-1 rounded-full bg-cyan-950/80 border border-cyan-400/50 text-cyan-300 text-xs font-black tracking-widest uppercase mb-3 shadow-md">
+                Sirena 3D Articulada · Aventura Submarina en 3ra Persona
+            </div>
+            <h1 class="title-ancient text-4xl md:text-6xl font-black mb-1">LA ÚLTIMA SIRENA</h1>
+            <h2 class="text-xl md:text-2xl text-cyan-300 font-bold mb-4 tracking-wide italic">DEL OCÉANO 3D</h2>
+            
+            <p class="text-slate-200 text-sm md:text-base max-w-lg mx-auto mb-6 leading-relaxed">
+                Nada en un océano 3D con una sirena articulada de cola ondulante. Mueve la cámara con el ratón, nada con WASD en todas las direcciones, purifica erizos con tu coletazo y desbloquea Colas, Vinchas y Tops en El Armario.
+            </p>
+
+            <div class="flex flex-wrap justify-center gap-4 mb-6">
+                <button id="btn-start-game" class="btn-sea text-lg px-8 py-3.5 shadow-xl">
+                    <span>🌊 Jugar Nivel 1: El Arrecife</span>
+                </button>
+                <button id="btn-open-wardrobe" class="btn-sea btn-secondary text-base px-6">
+                    <span>👗 El Armario (Colas, Vinchas y Tops)</span>
+                </button>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-4 text-xs text-sky-300 bg-blue-950/60 py-2.5 px-4 rounded-xl border border-sky-400/20">
+                <span>🖱️ <b>Ratón</b> = Vista Panorámica 3D</span> • 
+                <span>🎮 <b>A / D</b> = Nadar Izquierda / Derecha</span> • 
+                <span>💫 <b>Clic Izq</b> = Coletazo</span> • 
+                <span>💨 <b>Espacio</b> = Impulso</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== PANTALLA: EL ARMARIO (COLAS, VINCHAS Y TOPS) ==================== -->
+    <div id="screen-wardrobe" class="overlay-screen hidden">
+        <div class="w-full max-w-4xl flex flex-col items-center bg-slate-950/95 p-6 rounded-3xl border border-sky-400/40 backdrop-blur-md shadow-2xl">
+            <div class="flex justify-between items-center w-full mb-3">
+                <div>
+                    <h2 class="title-ancient text-3xl font-extrabold text-left">EL ARMARIO DEL REINO</h2>
+                    <p class="text-xs text-sky-300 text-left">Personaliza las Colas 3D, Vinchas para la cabeza y Remeras/Tops de la sirena</p>
+                </div>
+                <button id="btn-close-wardrobe" class="btn-sea btn-secondary py-1.5 px-4 text-sm">Volver ✕</button>
+            </div>
+
+            <!-- Pestañas de las 3 Categorías -->
+            <div class="flex gap-3 mb-4 w-full justify-center">
+                <button id="tab-btn-tails" class="wardrobe-tab active" onclick="switchWardrobeTab('tails')">🧜‍♀️ Colas 3D</button>
+                <button id="tab-btn-headbands" class="wardrobe-tab" onclick="switchWardrobeTab('headbands')">👑 Vinchas de Cabeza</button>
+                <button id="tab-btn-tops" class="wardrobe-tab" onclick="switchWardrobeTab('tops')">👙 Remeras / Tops</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full items-center bg-blue-950/40 p-5 rounded-2xl border border-sky-500/30">
+                <!-- Previsualización Dinámica de Assets 2D -->
+                <div class="flex flex-col items-center justify-center p-4 bg-slate-900/80 rounded-2xl border border-sky-400/30">
+                    <div class="w-56 h-72 relative flex items-center justify-center overflow-hidden bg-slate-950/60 rounded-xl border border-sky-400/20 shadow-inner">
+                        <div id="wardrobe-preview-box" class="relative w-48 h-64 flex items-center justify-center">
+                            <div id="wardrobe-preview-tail" class="absolute pointer-events-none"></div>
+                            <div id="wardrobe-preview-top" class="absolute pointer-events-none"></div>
+                            <div id="wardrobe-preview-headband" class="absolute pointer-events-none"></div>
+                            <img id="wardrobe-img" src="sprites/sirena_idle_0.png" class="hidden" alt="Sirena">
+                        </div>
+                    </div>
+                    <div id="wardrobe-item-name" class="font-extrabold text-lg text-cyan-300 mt-2">Cola Turquesa Clásica</div>
+                    <div id="wardrobe-item-desc" class="text-xs text-sky-200/80 italic text-center mt-1">Escamas turquesas con aleta caudal iridiscente.</div>
+                </div>
+
+                <!-- Opciones de la Categoría Activa -->
+                <div class="flex flex-col gap-2.5 max-h-80 overflow-y-auto pr-1" id="wardrobe-options-list">
+                    <!-- Dinámico con miniaturas de assets 2D -->
+                </div>
+            </div>
+
+            <div class="mt-4 flex items-center gap-4">
+                <span class="text-sm text-sky-200">Perlas Mágicas Disponibles:</span>
+                <span id="wardrobe-pearls" class="text-xl font-black text-amber-300 flex items-center gap-1">⚪ 0</span>
+                <span class="text-xs text-sky-400/70">(Recoge perlas y purifica erizos en el arrecife)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== PANTALLA: PAUSA ==================== -->
+    <div id="screen-pause" class="overlay-screen hidden">
+        <div class="bg-slate-950/85 p-8 rounded-3xl border border-sky-400/40 max-w-sm w-full shadow-2xl">
+            <h2 class="title-ancient text-3xl font-extrabold mb-4">PARTIDA EN PAUSA</h2>
+            <div class="flex flex-col gap-3">
+                <button id="btn-resume" class="btn-sea">Reanudar Partida</button>
+                <button id="btn-pause-music" class="btn-sea btn-secondary flex items-center justify-center gap-2">
+                    <span>🎵 Música: ON</span>
+                </button>
+                <button id="btn-restart-level" class="btn-sea btn-secondary">Reiniciar Nivel 1</button>
+                <button id="btn-pause-wardrobe" class="btn-sea btn-secondary">El Armario</button>
+                <button id="btn-quit-menu" class="btn-sea btn-secondary">Menú Principal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== PANTALLA: VICTORIA DE NIVEL 1 ==================== -->
+    <div id="screen-victory" class="overlay-screen hidden">
+        <div class="max-w-lg bg-slate-950/90 p-8 rounded-3xl border border-emerald-400/50 shadow-2xl">
+            <div class="text-6xl mb-2 animate-bounce">✨🧜‍♀️✨</div>
+            <h2 class="title-ancient text-3xl md:text-4xl font-black text-emerald-400 mb-2">¡EL ARRECIFE HA DESPERTADO!</h2>
+            <p class="text-sm text-cyan-200 mb-4">
+                Has reunido los 3 fragmentos de perla mágica y restaurado la luz ancestral en El Arrecife Perdido.
+            </p>
+
+            <div class="bg-blue-950/80 border border-sky-400/40 p-4 rounded-2xl mb-5 text-sm text-left space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-sky-300">Premio por superar nivel:</span>
+                    <span class="font-extrabold text-amber-300">+5 Perlas Mágicas</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sky-300">Desbloqueo en El Armario:</span>
+                    <span class="font-extrabold text-pink-300">Cola Coral del Arrecife</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sky-300">Fragmentos recuperados:</span>
+                    <span class="font-bold text-emerald-400">3 / 3 (Cian, Rosa, Violeta)</span>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-3">
+                <button id="btn-free-swim" class="btn-sea px-6">Explorar Arrecife Libremente 🌊</button>
+                <button id="btn-victory-wardrobe" class="btn-sea btn-secondary px-5">Ir al Armario 👗</button>
+                <button id="btn-victory-restart" class="btn-sea btn-secondary px-4">Rejugar 🔄</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== PANTALLA: DERROTA ==================== -->
+    <div id="screen-gameover" class="overlay-screen hidden">
+        <div class="max-w-md bg-slate-950/90 p-8 rounded-3xl border border-rose-500/50 shadow-2xl">
+            <div class="text-5xl mb-2">🥀</div>
+            <h2 class="title-ancient text-3xl font-black text-rose-500 mb-3">LA LUZ SE HA APAGADO</h2>
+            <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+                Los erizos corrompidos te han alcanzado, pero la magia del océano aún te llama.
+            </p>
+            <div class="flex justify-center gap-3">
+                <button id="btn-retry" class="btn-sea px-6">Reintentar Nivel 1 🔄</button>
+                <button id="btn-gameover-menu" class="btn-sea btn-secondary px-4">Menú</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * ====================================================================
+ * LA ÚLTIMA SIRENA DEL OCÉANO 3D
+ * ====================================================================
+ */
+
+// --- 1. CATÁLOGO COMPLETO DE PERSONALIZACIÓN Y ASSETS 2D ---
+
+const ASSET_PATHS = {
+    headbands: 'assets/WhatsApp_Image_2026-11-09_at_22.39.34__2_-removebg-preview.png',
+    tops: 'assets/WhatsApp_Image_2026-11-09_at_22.39.34__3_-removebg-preview.png',
+    tailEmerald: 'assets/WhatsApp_Image_2026-11-09_at_22.39.33-removebg-preview.png',
+    tailViolet: 'assets/WhatsApp_Image_2026-11-09_at_22.39.33__1_-removebg-preview.png',
+    tailVolcano: 'assets/WhatsApp_Image_2026-11-09_at_22.39.34-removebg-preview.png',
+    tailLegendary: 'assets/WhatsApp_Image_2026-11-09_at_22.39.34__1_-removebg-preview.png'
+};
+
+const TAIL_SKINS = {
+    tail_default: { id: 'tail_default', name: "Turquesa Clásica", desc: "Escamas turquesas con aleta caudal cian iridiscente.", colorHex: 0x06b6d4, finHex: 0x38bdf8, cost: 0, unlocked: true, asset: ASSET_PATHS.tailEmerald, tint: 0x00e5ff, filter: 'hue-rotate(160deg) saturate(1.4)' },
+    tail_coral: { id: 'tail_coral', name: "Coral del Arrecife", desc: "Brillo cálido de los corales rosados y aleta dorada.", colorHex: 0xf43f5e, finHex: 0xfbbf24, cost: 40, unlocked: false, asset: ASSET_PATHS.tailEmerald, tint: 0xff6688, filter: 'hue-rotate(270deg) saturate(1.5)' },
+    tail_emerald: { id: 'tail_emerald', name: "Esmeralda Marina", desc: "Verde esmeralda pulido por las mareas abisales.", colorHex: 0x10b981, finHex: 0x34d399, cost: 70, unlocked: false, asset: ASSET_PATHS.tailEmerald, tint: 0xffffff, filter: 'none' },
+    tail_violet: { id: 'tail_violet', name: "Violeta Abisal", desc: "Púrpura misterioso con bioluminiscencia estelar.", colorHex: 0x8b5cf6, finHex: 0xc084fc, cost: 120, unlocked: false, asset: ASSET_PATHS.tailViolet, tint: 0xffffff, filter: 'none' },
+    tail_volcano: { id: 'tail_volcano', name: "Obsidiana Volcánica", desc: "Negro volcánico con aletas de fuego carmesí.", colorHex: 0x7c2d12, finHex: 0xef4444, cost: 180, unlocked: false, asset: ASSET_PATHS.tailVolcano, tint: 0xffffff, filter: 'none' },
+    tail_legendary: { id: 'tail_legendary', name: "Tornasol Legendaria", desc: "Armonía radiante que refleja todos los prismas del mar.", colorHex: 0xec4899, finHex: 0x38bdf8, cost: 300, unlocked: false, asset: ASSET_PATHS.tailLegendary, tint: 0xffffff, filter: 'none' }
+};
+
+const HEADBAND_SKINS = {
+    head_none: { id: 'head_none', name: "Flor Marina Azul", desc: "Una delicada flor de arrecife en el cabello.", colorHex: 0x38bdf8, cost: 0, unlocked: true, asset: ASSET_PATHS.headbands, crop: { x: 29, y: 25, w: 157, h: 160 } },
+    head_pearls: { id: 'head_pearls', name: "Tiara de Perlas Nácar", desc: "Perlas brillantes trenzadas con algas finas.", colorHex: 0xfef08a, cost: 25, unlocked: false, asset: ASSET_PATHS.headbands, crop: { x: 225, y: 20, w: 161, h: 165 } },
+    head_gold: { id: 'head_gold', name: "Diadema Conchas de Oro", desc: "Conchas pulidas forjadas con oro del galeón.", colorHex: 0xf59e0b, cost: 50, unlocked: false, asset: ASSET_PATHS.headbands, crop: { x: 423, y: 24, w: 166, h: 161 } },
+    head_coral: { id: 'head_coral', name: "Corona de Coral Rosa", desc: "Ramas de coral fino con destellos rosados.", colorHex: 0xf43f5e, cost: 85, unlocked: false, asset: ASSET_PATHS.headbands, crop: { x: 110, y: 200, w: 179, h: 175 } },
+    head_crystal: { id: 'head_crystal', name: "Tiara Estelar Abisal", desc: "Prisma de cristal puro que emite luz azul estelar.", colorHex: 0xa855f7, cost: 140, unlocked: false, asset: ASSET_PATHS.headbands, crop: { x: 334, y: 205, w: 178, h: 170 } }
+};
+
+const TOP_SKINS = {
+    top_shells: { id: 'top_shells', name: "Conchas Blancas Clásicas", desc: "Conchas marinas de nácar blanco natural.", colorHex: 0xf8fafc, cost: 0, unlocked: true, asset: ASSET_PATHS.tops, crop: { x: 70, y: 256, w: 148, h: 128 }, tint: 0xffffff },
+    top_emerald: { id: 'top_emerald', name: "Top de Algas Esmeralda", desc: "Fibras de algas verdes suaves adornadas con perlas.", colorHex: 0x10b981, cost: 30, unlocked: false, asset: ASSET_PATHS.tops, crop: { x: 60, y: 63, w: 158, h: 125 }, tint: 0xffffff },
+    top_coral: { id: 'top_coral', name: "Corsé de Escamas Rosas", desc: "Escamas rosadas flexibles con reflejos nacarados.", colorHex: 0xf43f5e, cost: 55, unlocked: false, asset: ASSET_PATHS.tops, crop: { x: 342, y: 63, w: 144, h: 156 }, tint: 0xffffff },
+    top_gold: { id: 'top_gold', name: "Top Real de Nácar Dorado", desc: "Conchas sagradas bañadas en oro atlante.", colorHex: 0xf59e0b, cost: 90, unlocked: false, asset: ASSET_PATHS.tops, crop: { x: 70, y: 256, w: 148, h: 128 }, tint: 0xfde047 },
+    top_abyss: { id: 'top_abyss', name: "Top de Seda Marina Violeta", desc: "Seda de anémona bioluminiscente color amatista.", colorHex: 0x9333ea, cost: 150, unlocked: false, asset: ASSET_PATHS.tops, crop: { x: 299, y: 254, w: 220, h: 185 }, tint: 0xffffff }
+};
+
+// --- 2. FÍSICAS MATEMÁTICAS DEL LECHO MARINO ---
+function getSeabedHeight(x, z) {
+    return Math.sin(x * 0.06) * 1.5 + Math.cos(z * 0.06) * 1.5 + (Math.sin(x * 0.15) * Math.cos(z * 0.15)) * 1.8;
+}
+
+// --- 3. GESTOR DE AUDIO SINTETIZADO ---
+class UnderwaterAudio {
+    constructor() {
+        this.ctx = null;
+        this.masterGain = null;
+        this.sfxGain = null;
+        this.musicGain = null;
+        this.isMusicPlaying = true;
+        this.musicInterval = null;
+        this.noteStep = 0;
+        this.externalAudio = null;
+        this.hasExternalMusic = false;
+    }
+
+    init() {
+        try {
+            if (!this.externalAudio) {
+                this.externalAudio = new Audio('musica.mp3');
+                this.externalAudio.loop = true;
+                this.externalAudio.volume = 0.45;
+                this.externalAudio.addEventListener('canplaythrough', () => {
+                    this.hasExternalMusic = true;
+                    if (this.isMusicPlaying) {
+                        this.externalAudio.play().catch(() => {});
+                    }
+                });
+                this.externalAudio.addEventListener('error', () => {
+                    this.hasExternalMusic = false;
+                });
+            }
+
+            if (!this.ctx) {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioCtx();
+
+                this.masterGain = this.ctx.createGain();
+                this.masterGain.gain.setValueAtTime(1.0, this.ctx.currentTime);
+                this.masterGain.connect(this.ctx.destination);
+
+                this.sfxGain = this.ctx.createGain();
+                this.sfxGain.gain.setValueAtTime(0.85, this.ctx.currentTime);
+                this.sfxGain.connect(this.masterGain);
+
+                this.musicGain = this.ctx.createGain();
+                this.musicGain.gain.setValueAtTime(this.isMusicPlaying ? 0.42 : 0.0, this.ctx.currentTime);
+                this.musicGain.connect(this.masterGain);
+
+                this.startPirateMusic();
+            }
+
+            this.ensureRunning();
+        } catch(e) {
+            console.warn("AudioContext init info:", e);
+        }
+    }
+
+    ensureRunning() {
+        if (!this.ctx) {
+            this.init();
+            return;
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().then(() => {
+                this.updateMusicUI();
+            }).catch(() => {});
+        }
+        if (this.hasExternalMusic && this.isMusicPlaying && this.externalAudio && this.externalAudio.paused) {
+            this.externalAudio.play().catch(() => {});
+        }
+    }
+
+    toggleMusic() {
+        this.isMusicPlaying = !this.isMusicPlaying;
+        if (!this.ctx) {
+            this.init();
+        } else {
+            this.ensureRunning();
+            if (this.hasExternalMusic && this.externalAudio) {
+                if (this.isMusicPlaying) {
+                    this.externalAudio.play().catch(() => {});
+                } else {
+                    this.externalAudio.pause();
+                }
+            }
+            if (this.musicGain) {
+                const now = this.ctx.currentTime;
+                this.musicGain.gain.cancelScheduledValues(now);
+                this.musicGain.gain.setValueAtTime(this.musicGain.gain.value, now);
+                this.musicGain.gain.linearRampToValueAtTime(this.isMusicPlaying ? 0.42 : 0.0, now + 0.12);
+            }
+        }
+        this.updateMusicUI();
+        return this.isMusicPlaying;
+    }
+
+    updateMusicUI() {
+        const hudBtn = document.getElementById('btn-toggle-music');
+        const hudIcon = document.getElementById('music-icon');
+        const hudText = document.getElementById('music-status-text');
+        const pauseBtn = document.getElementById('btn-pause-music');
+
+        if (this.isMusicPlaying) {
+            if (hudIcon) hudIcon.innerText = '🎵';
+            if (hudText) hudText.innerText = 'Música: ON';
+            if (hudBtn) hudBtn.className = 'hud-glass px-3 py-1.5 text-xs font-black hover:bg-sky-500/30 text-amber-300 cursor-pointer pointer-events-auto flex items-center gap-1.5 rounded-xl border border-amber-400/40 shadow-md transition-all active:scale-95';
+            if (pauseBtn) pauseBtn.innerHTML = '<span>🎵 Música: ON</span>';
+        } else {
+            if (hudIcon) hudIcon.innerText = '🔇';
+            if (hudText) hudText.innerText = 'Música: OFF';
+            if (hudBtn) hudBtn.className = 'hud-glass px-3 py-1.5 text-xs font-black hover:bg-slate-700/40 text-slate-400 cursor-pointer pointer-events-auto flex items-center gap-1.5 rounded-xl border border-slate-600/40 opacity-75 transition-all active:scale-95';
+            if (pauseBtn) pauseBtn.innerHTML = '<span>🔇 Música: OFF</span>';
+        }
+    }
+
+    startPirateMusic() {
+        if (this.musicInterval) return;
+
+        const D2 = 73.42, F2 = 87.31, G2 = 98.00, A2 = 110.00, Bb2 = 116.54;
+        const D3 = 146.83, F3 = 174.61, G3 = 196.00, A3 = 220.00, Bb3 = 233.08, C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00;
+
+        const melody = [
+            { freq: D4, dur: 0.18, type: 'sawtooth' },
+            { freq: F4, dur: 0.18, type: 'sawtooth' },
+            { freq: G4, dur: 0.18, type: 'sawtooth' },
+            { freq: G4, dur: 0.36, type: 'triangle' },
+            { freq: G4, dur: 0.18, type: 'sawtooth' },
+            { freq: A4, dur: 0.18, type: 'sawtooth' },
+            { freq: Bb3, dur: 0.18, type: 'sawtooth' },
+            { freq: Bb3, dur: 0.36, type: 'triangle' },
+            { freq: Bb3, dur: 0.18, type: 'sawtooth' },
+            { freq: C4, dur: 0.18, type: 'sawtooth' },
+            { freq: A3, dur: 0.18, type: 'sawtooth' },
+            { freq: A3, dur: 0.36, type: 'triangle' },
+            { freq: D4, dur: 0.18, type: 'sawtooth' },
+            { freq: F4, dur: 0.18, type: 'sawtooth' },
+            { freq: G4, dur: 0.42, type: 'triangle' },
+            { freq: D4, dur: 0.18, type: 'sawtooth' },
+            { freq: A4, dur: 0.28, type: 'sawtooth' },
+            { freq: G4, dur: 0.28, type: 'triangle' },
+            { freq: F4, dur: 0.18, type: 'sawtooth' },
+            { freq: E4, dur: 0.18, type: 'sawtooth' },
+            { freq: D4, dur: 0.48, type: 'triangle' }
+        ];
+
+        const bassline = [D2, D2, F2, D2, G2, D2, Bb2, A2, D2, F2, G2, A2];
+
+        this.musicInterval = setInterval(() => {
+            if (!this.ctx || !this.isMusicPlaying) return;
+            if (this.hasExternalMusic && this.externalAudio && !this.externalAudio.paused) return;
+            if (this.ctx.state !== 'running') return;
+
+            const now = this.ctx.currentTime + 0.02;
+
+            const bassOsc = this.ctx.createOscillator();
+            const bassGain = this.ctx.createGain();
+            bassOsc.type = 'sawtooth';
+            const bassFreq = bassline[this.noteStep % bassline.length];
+            bassOsc.frequency.setValueAtTime(bassFreq, now);
+
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(360, now);
+
+            bassGain.gain.setValueAtTime(0.42, now);
+            bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
+
+            bassOsc.connect(filter);
+            filter.connect(bassGain);
+            bassGain.connect(this.musicGain);
+
+            bassOsc.start(now);
+            bassOsc.stop(now + 0.18);
+
+            if (this.noteStep % 2 === 0) {
+                const melItem = melody[(this.noteStep / 2) % melody.length];
+
+                const melOsc = this.ctx.createOscillator();
+                const melGain = this.ctx.createGain();
+                melOsc.type = melItem.type;
+                melOsc.frequency.setValueAtTime(melItem.freq, now);
+
+                const melFilter = this.ctx.createBiquadFilter();
+                melFilter.type = 'lowpass';
+                melFilter.frequency.setValueAtTime(1400, now);
+
+                melGain.gain.setValueAtTime(0.35, now);
+                melGain.gain.exponentialRampToValueAtTime(0.001, now + melItem.dur);
+
+                melOsc.connect(melFilter);
+                melFilter.connect(melGain);
+                melGain.connect(this.musicGain);
+
+                melOsc.start(now);
+                melOsc.stop(now + melItem.dur);
+
+                const harmOsc = this.ctx.createOscillator();
+                const harmGain = this.ctx.createGain();
+                harmOsc.type = 'triangle';
+                harmOsc.frequency.setValueAtTime(melItem.freq * 2, now);
+                harmGain.gain.setValueAtTime(0.14, now);
+                harmGain.gain.exponentialRampToValueAtTime(0.001, now + melItem.dur * 0.7);
+
+                harmOsc.connect(harmGain);
+                harmGain.connect(this.musicGain);
+
+                harmOsc.start(now);
+                harmOsc.stop(now + melItem.dur * 0.7);
+            }
+
+            this.noteStep++;
+        }, 180);
+    }
+
+    playHit() {
+        if (!this.ctx) return;
+        this.ensureRunning();
+        const now = this.ctx.currentTime + 0.01;
+
+        const voiceOsc = this.ctx.createOscillator();
+        const voiceGain = this.ctx.createGain();
+        voiceOsc.type = 'sawtooth';
+
+        voiceOsc.frequency.setValueAtTime(470, now);
+        voiceOsc.frequency.exponentialRampToValueAtTime(180, now + 0.32);
+
+        const formant1 = this.ctx.createBiquadFilter();
+        formant1.type = 'bandpass';
+        formant1.frequency.setValueAtTime(780, now);
+        formant1.Q.setValueAtTime(4.2, now);
+
+        const formant2 = this.ctx.createBiquadFilter();
+        formant2.type = 'bandpass';
+        formant2.frequency.setValueAtTime(1580, now);
+        formant2.Q.setValueAtTime(5.5, now);
+
+        voiceGain.gain.setValueAtTime(0.0, now);
+        voiceGain.gain.linearRampToValueAtTime(0.85, now + 0.035);
+        voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.34);
+
+        voiceOsc.connect(formant1);
+        voiceOsc.connect(formant2);
+        formant1.connect(voiceGain);
+        formant2.connect(voiceGain);
+        voiceGain.connect(this.sfxGain);
+
+        voiceOsc.start(now);
+        voiceOsc.stop(now + 0.35);
+
+        try {
+            const bufferSize = Math.floor(this.ctx.sampleRate * 0.22);
+            const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+            }
+            const noiseSource = this.ctx.createBufferSource();
+            noiseSource.buffer = noiseBuffer;
+
+            const noiseFilter = this.ctx.createBiquadFilter();
+            noiseFilter.type = 'bandpass';
+            noiseFilter.frequency.setValueAtTime(1450, now);
+            noiseFilter.Q.setValueAtTime(2.8, now);
+
+            const noiseGain = this.ctx.createGain();
+            noiseGain.gain.setValueAtTime(0.3, now);
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+            noiseSource.connect(noiseFilter);
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(this.sfxGain);
+
+            noiseSource.start(now);
+            noiseSource.stop(now + 0.22);
+        } catch(e) {}
+
+        const thudOsc = this.ctx.createOscillator();
+        const thudGain = this.ctx.createGain();
+        thudOsc.type = 'sine';
+        thudOsc.frequency.setValueAtTime(90, now);
+        thudOsc.frequency.exponentialRampToValueAtTime(32, now + 0.18);
+
+        thudGain.gain.setValueAtTime(0.45, now);
+        thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+        thudOsc.connect(thudGain);
+        thudGain.connect(this.sfxGain);
+
+        thudOsc.start(now);
+        thudOsc.stop(now + 0.18);
+    }
+
+    playEnemyHit() {
+        if (!this.ctx) return;
+        this.ensureRunning();
+        const now = this.ctx.currentTime + 0.01;
+
+        const hitOsc = this.ctx.createOscillator();
+        const hitGain = this.ctx.createGain();
+        hitOsc.type = 'triangle';
+        hitOsc.frequency.setValueAtTime(320, now);
+        hitOsc.frequency.exponentialRampToValueAtTime(55, now + 0.16);
+
+        hitGain.gain.setValueAtTime(0.7, now);
+        hitGain.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
+
+        hitOsc.connect(hitGain);
+        hitGain.connect(this.sfxGain);
+        hitOsc.start(now);
+        hitOsc.stop(now + 0.18);
+
+        try {
+            const bufSize = Math.floor(this.ctx.sampleRate * 0.14);
+            const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * (1 - i / bufSize);
+            }
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buf;
+
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(1750, now);
+            filter.Q.setValueAtTime(3.5, now);
+
+            const nGain = this.ctx.createGain();
+            nGain.gain.setValueAtTime(0.55, now);
+            nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+            noise.connect(filter);
+            filter.connect(nGain);
+            nGain.connect(this.sfxGain);
+
+            noise.start(now);
+            noise.stop(now + 0.14);
+        } catch(e) {}
+
+        const pingOsc = this.ctx.createOscillator();
+        const pingGain = this.ctx.createGain();
+        pingOsc.type = 'sine';
+        pingOsc.frequency.setValueAtTime(880, now + 0.02);
+        pingOsc.frequency.exponentialRampToValueAtTime(440, now + 0.20);
+
+        pingGain.gain.setValueAtTime(0.4, now + 0.02);
+        pingGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+        pingOsc.connect(pingGain);
+        pingGain.connect(this.sfxGain);
+        pingOsc.start(now + 0.02);
+        pingOsc.stop(now + 0.22);
+    }
+
+    playEnemyDefeated() {
+        if (!this.ctx) return;
+        this.ensureRunning();
+        const now = this.ctx.currentTime + 0.01;
+
+        try {
+            const bufSize = Math.floor(this.ctx.sampleRate * 0.35);
+            const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.sin((i / bufSize) * Math.PI);
+            }
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buf;
+
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(1200, now);
+            filter.frequency.exponentialRampToValueAtTime(3200, now + 0.3);
+
+            const nGain = this.ctx.createGain();
+            nGain.gain.setValueAtTime(0.45, now);
+            nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+            noise.connect(filter);
+            filter.connect(nGain);
+            nGain.connect(this.sfxGain);
+
+            noise.start(now);
+            noise.stop(now + 0.35);
+        } catch(e) {}
+
+        [587.33, 739.99, 880.00, 1174.66].forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            const startTime = now + idx * 0.06;
+            osc.frequency.setValueAtTime(freq, startTime);
+
+            gain.gain.setValueAtTime(0.35, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.38);
+
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            osc.start(startTime);
+            osc.stop(startTime + 0.38);
+        });
+    }
+
+    playCollect() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        [1760, 2637].forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+            gain.gain.setValueAtTime(0.22, now + idx * 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.22);
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            osc.start(now + idx * 0.05);
+            osc.stop(now + idx * 0.05 + 0.22);
+        });
+    }
+
+    playCollectFragment() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = [587.33, 739.99, 880.00, 1174.66, 1479.98];
+        notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+
+            gain.gain.setValueAtTime(0.28, now + idx * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.6);
+
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            osc.start(now + idx * 0.08);
+            osc.stop(now + idx * 0.08 + 0.6);
+        });
+    }
+
+    playAttack() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(420, now + 0.09);
+        osc.frequency.exponentialRampToValueAtTime(100, now + 0.26);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.26);
+    }
+
+    playDash() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(460, now + 0.16);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.25);
+    }
+
+    playVictory() {
+        if (!this.ctx) return;
+        const notes = [440, 554.37, 659.25, 880, 1108.73];
+        notes.forEach((f, i) => {
+            const now = this.ctx.currentTime + i * 0.12;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(f, now);
+            gain.gain.setValueAtTime(0.25, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            osc.start(now);
+            osc.stop(now + 0.6);
+        });
+    }
+}
+const audio = new UnderwaterAudio();
+
+// --- 3. ESTADO GLOBAL ---
+const state = {
+    screen: 'menu',
+    pearls: 0,
+    currentTail: 'tail_default',
+    currentHeadband: 'head_none',
+    currentTop: 'top_shells',
+    wardrobeTab: 'tails',
+    isPaused: false,
+    freeSwim: false,
+    pointerLocked: false
+};
+
+function loadSavedData() {
+    try {
+        const saved = JSON.parse(localStorage.getItem('sirena_save_v5') || '{}');
+        if (typeof saved.pearls === 'number') state.pearls = saved.pearls;
+        if (saved.currentTail && TAIL_SKINS[saved.currentTail]) state.currentTail = saved.currentTail;
+        if (saved.currentHeadband && HEADBAND_SKINS[saved.currentHeadband]) state.currentHeadband = saved.currentHeadband;
+        if (saved.currentTop && TOP_SKINS[saved.currentTop]) state.currentTop = saved.currentTop;
+
+        if (saved.unlockedTails) saved.unlockedTails.forEach(id => { if (TAIL_SKINS[id]) TAIL_SKINS[id].unlocked = true; });
+        if (saved.unlockedHeadbands) saved.unlockedHeadbands.forEach(id => { if (HEADBAND_SKINS[id]) HEADBAND_SKINS[id].unlocked = true; });
+        if (saved.unlockedTops) saved.unlockedTops.forEach(id => { if (TOP_SKINS[id]) TOP_SKINS[id].unlocked = true; });
+    } catch(e) {}
+}
+
+function persistData() {
+    try {
+        const unlockedTails = Object.keys(TAIL_SKINS).filter(k => TAIL_SKINS[k].unlocked);
+        const unlockedHeadbands = Object.keys(HEADBAND_SKINS).filter(k => HEADBAND_SKINS[k].unlocked);
+        const unlockedTops = Object.keys(TOP_SKINS).filter(k => TOP_SKINS[k].unlocked);
+
+        localStorage.setItem('sirena_save_v5', JSON.stringify({
+            pearls: state.pearls,
+            currentTail: state.currentTail,
+            currentHeadband: state.currentHeadband,
+            currentTop: state.currentTop,
+            unlockedTails,
+            unlockedHeadbands,
+            unlockedTops
+        }));
+    } catch(e) {}
+}
+loadSavedData();
+
+// --- 4. CARGADOR DE TEXTURAS ROBUSTO ---
+function loadTextureSafe(assetKey, fallbackPath) {
+    const loader = new THREE.TextureLoader();
+    let src = fallbackPath;
+    if (window.GAME_ASSETS_BASE64 && window.GAME_ASSETS_BASE64[assetKey]) {
+        src = window.GAME_ASSETS_BASE64[assetKey];
+    }
+    return loader.load(src);
+}
+
+// ====================================================================
+// --- 5. MODELO SPRITE 2D/3D DE LA SIRENA CON ACCESORIOS Y FÍSICAS ---
+// ====================================================================
+
+class Mermaid3DArticulated {
+    constructor(scene) {
+        this.scene = scene;
+        this.group = new THREE.Group();
+        this.scene.add(this.group);
+
+        this.position = this.group.position;
+        this.rotation = this.group.rotation;
+
+        this.speed = 0.48;
+        this.velocity = new THREE.Vector3();
+        this.health = 3;
+        this.invulnTimer = 0;
+
+        this.isAttacking = false;
+        this.attackTimer = 0;
+        this.attackCooldown = 0;
+
+        this.isDashing = false;
+        this.dashTimer = 0;
+        this.dashCooldown = 0;
+        this.maxDashCooldown = 65;
+
+        this.swimCycleTime = 0;
+        this.playerRadius = 1.25;
+
+        // Raycaster para colisiones físicas avanzadas sin atravesar estructuras
+        this.raycaster = new THREE.Raycaster();
+
+        // Loader de texturas Three.js y cache
+        this.texLoader = new THREE.TextureLoader();
+        this.cachedBaseTextures = {};
+
+        this.buildModel();
+    }
+
+    getBaseTexture(path) {
+        if (!this.cachedBaseTextures[path]) {
+            this.cachedBaseTextures[path] = this.texLoader.load(path);
+        }
+        return this.cachedBaseTextures[path];
+    }
+
+    buildModel() {
+        // ELIMINADAS COMPLETAMENTE LAS GEOMETRÍAS (CILINDROS, CONOS Y ESFERAS).
+        // Reemplazadas por THREE.Sprite usando las texturas PNG de la carpeta 'assets'.
+
+        // 1. Sprite de la Cola y Cuerpo de la Sirena
+        const tailMat = new THREE.SpriteMaterial({
+            transparent: true,
+            depthWrite: false
+        });
+        this.tailSprite = new THREE.Sprite(tailMat);
+        this.tailSprite.scale.set(2.2, 5.0, 1.0);
+        this.tailSprite.position.set(0, 0.4, 0);
+        this.tailSprite.renderOrder = 10;
+        this.group.add(this.tailSprite);
+
+        // 2. Sprite de Remera / Top Dinámico
+        const topMat = new THREE.SpriteMaterial({
+            transparent: true,
+            depthWrite: false
+        });
+        this.topSprite = new THREE.Sprite(topMat);
+        this.topSprite.scale.set(1.2, 0.95, 1.0);
+        this.topSprite.position.set(0, 1.35, 0.05);
+        this.topSprite.renderOrder = 12;
+        this.group.add(this.topSprite);
+
+        // 3. Sprite de Vincha / Tiara de Cabeza
+        const headbandMat = new THREE.SpriteMaterial({
+            transparent: true,
+            depthWrite: false
+        });
+        this.headbandSprite = new THREE.Sprite(headbandMat);
+        this.headbandSprite.scale.set(1.05, 0.95, 1.0);
+        this.headbandSprite.position.set(0, 2.15, 0.08);
+        this.headbandSprite.renderOrder = 14;
+        this.group.add(this.headbandSprite);
+
+        // 4. Efecto Sprite de Coletazo (Vórtice Marino con Additive Blending)
+        const vortexMat = new THREE.SpriteMaterial({
+            map: loadTextureSafe('coral_1', 'sprites/sirena_ataque.png'),
+            color: 0x38bdf8,
+            transparent: true,
+            opacity: 0,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+        this.vortexSprite = new THREE.Sprite(vortexMat);
+        this.vortexSprite.scale.set(4.8, 4.8, 1.0);
+        this.vortexSprite.position.set(0, 0.6, 0);
+        this.vortexSprite.renderOrder = 16;
+        this.group.add(this.vortexSprite);
+
+        // Actualizar sprites según configuración inicial del Armario
+        this.updateCustomization();
+    }
+
+    updateCustomization() {
+        // --- A. Actualizar Sprite de Cola ---
+        const tailData = TAIL_SKINS[state.currentTail] || TAIL_SKINS.tail_default;
+        const tailBaseTex = this.getBaseTexture(tailData.asset);
+        
+        // Configuración UV del sprite para la vista de nado
+        const tailTex = tailBaseTex.clone();
+        tailTex.needsUpdate = true;
+        const W_TAIL = 612, H_TAIL = 408;
+        const poseTail = { x: 316, y: 20, w: 132, h: 344 }; // Pose 2: nado vista dorsal
+        tailTex.repeat.set(poseTail.w / W_TAIL, poseTail.h / H_TAIL);
+        tailTex.offset.set(poseTail.x / W_TAIL, (H_TAIL - (poseTail.y + poseTail.h)) / H_TAIL);
+
+        this.tailSprite.material.map = tailTex;
+        this.tailSprite.material.color.setHex(tailData.tint || 0xffffff);
+        this.tailSprite.material.needsUpdate = true;
+
+        // --- B. Actualizar Sprite de Top / Remera ---
+        const topData = TOP_SKINS[state.currentTop] || TOP_SKINS.top_shells;
+        const topBaseTex = this.getBaseTexture(topData.asset);
+        const topTex = topBaseTex.clone();
+        topTex.needsUpdate = true;
+        const W_TOP = 554, H_TOP = 451;
+        const cropTop = topData.crop;
+        topTex.repeat.set(cropTop.w / W_TOP, cropTop.h / H_TOP);
+        topTex.offset.set(cropTop.x / W_TOP, (H_TOP - (cropTop.y + cropTop.h)) / H_TOP);
+
+        this.topSprite.material.map = topTex;
+        this.topSprite.material.color.setHex(topData.tint || 0xffffff);
+        this.topSprite.material.needsUpdate = true;
+
+        // --- C. Actualizar Sprite de Vincha / Tiara ---
+        const headData = HEADBAND_SKINS[state.currentHeadband] || HEADBAND_SKINS.head_none;
+        const headBaseTex = this.getBaseTexture(headData.asset);
+        const headTex = headBaseTex.clone();
+        headTex.needsUpdate = true;
+        const W_HEAD = 612, H_HEAD = 408;
+        const cropHead = headData.crop;
+        headTex.repeat.set(cropHead.w / W_HEAD, cropHead.h / H_HEAD);
+        headTex.offset.set(cropHead.x / W_HEAD, (H_HEAD - (cropHead.y + cropHead.h)) / H_HEAD);
+
+        this.headbandSprite.material.map = headTex;
+        this.headbandSprite.material.needsUpdate = true;
+    }
+
+    dash() {
+        if (this.dashCooldown <= 0) {
+            this.isDashing = true;
+            this.dashTimer = 16;
+            this.dashCooldown = this.maxDashCooldown;
+            audio.playDash();
+
+            const forward = new THREE.Vector3(Math.sin(this.rotation.y), 0, Math.cos(this.rotation.y));
+            this.velocity.copy(forward).multiplyScalar(1.55);
+
+            game.spawnBubbles(this.position, 22);
+        }
+    }
+
+    attack() {
+        if (this.attackCooldown <= 0) {
+            this.isAttacking = true;
+            this.attackTimer = 22;
+            this.attackCooldown = 24;
+            audio.playAttack();
+
+            const cue = document.getElementById('atk-visual-cue');
+            if (cue) {
+                cue.style.opacity = '1';
+                setTimeout(() => { cue.style.opacity = '0'; }, 260);
+            }
+
+            this.vortexSprite.material.opacity = 0.95;
+            this.vortexSprite.scale.set(4.5, 4.5, 1.0);
+
+            game.hitEnemiesInRadius(this.position, 5.5, 2);
+        }
+    }
+
+    takeDamage() {
+        if (this.invulnTimer <= 0) {
+            this.health--;
+            this.invulnTimer = 65;
+            audio.playHit();
+            game.spawnBubbles(this.position, 16, 0xf43f5e);
+
+            if (this.health <= 0) {
+                game.onDefeat();
+            }
+        }
+    }
+
+    resolveCollisions() {
+        // ==================== 1. FÍSICAS Y LÍMITES MATEMÁTICOS DEL LECHO MARINO ====================
+        const currentSeabedY = getSeabedHeight(this.position.x, this.position.z);
+        const minHeight = currentSeabedY + 2.5; // Margen físico riguroso para la sirena
+
+        // La sirena NUNCA debe atravesar el lecho marino
+        if (this.position.y < minHeight) {
+            this.position.y = minHeight;
+            if (this.velocity.y < 0) this.velocity.y = 0;
+        }
+
+        // Predicción de avance hacia pendientes del suelo marino
+        const nextX = this.position.x + this.velocity.x;
+        const nextZ = this.position.z + this.velocity.z;
+        const nextSeabedY = getSeabedHeight(nextX, nextZ);
+        if (this.position.y + this.velocity.y < nextSeabedY + 2.4) {
+            // Deslizar suavemente sobre la pendiente en vez de incrustarse
+            this.position.y = THREE.MathUtils.lerp(this.position.y, nextSeabedY + 2.5, 0.35);
+            if (this.velocity.y < 0) this.velocity.y = 0;
+        }
+
+        // Límite de agua superior (superficie del océano)
+        this.position.y = Math.min(26.2, this.position.y);
+
+        // Límites horizontales del mundo
+        this.position.x = Math.max(-68, Math.min(68, this.position.x));
+        this.position.z = Math.max(-68, Math.min(68, this.position.z));
+
+        // ==================== 2. COLISIÓN CON ESTRUCTURAS DEL ARRECIFE (ROCAS Y ARCOS) ====================
+        if (game && game.reefColliders) {
+            for (let i = 0; i < game.reefColliders.length; i++) {
+                const col = game.reefColliders[i];
+                if (col.type === 'sphere') {
+                    const dist = this.position.distanceTo(col.pos);
+                    const minDist = col.radius + this.playerRadius;
+                    if (dist < minDist && dist > 0.0001) {
+                        const pushDir = this.position.clone().sub(col.pos).normalize();
+                        const overlap = minDist - dist;
+                        this.position.addScaledVector(pushDir, overlap);
+
+                        // Anular componente de velocidad que empuja hacia adentro del obstáculo
+                        const vDot = this.velocity.dot(pushDir);
+                        if (vDot < 0) {
+                            this.velocity.sub(pushDir.clone().multiplyScalar(vDot));
+                        }
+                    }
+                } else if (col.type === 'cylinder') {
+                    const dx = this.position.x - col.pos.x;
+                    const dz = this.position.z - col.pos.z;
+                    const distXZ = Math.sqrt(dx * dx + dz * dz);
+                    const minDist = col.radius + this.playerRadius;
+                    if (distXZ < minDist && this.position.y >= col.minY && this.position.y <= col.maxY) {
+                        const nx = dx / (distXZ || 1);
+                        const nz = dz / (distXZ || 1);
+                        const push = minDist - distXZ;
+                        this.position.x += nx * push;
+                        this.position.z += nz * push;
+
+                        const vDot = this.velocity.x * nx + this.velocity.z * nz;
+                        if (vDot < 0) {
+                            this.velocity.x -= vDot * nx;
+                            this.velocity.z -= vDot * nz;
+                        }
+                    }
+                }
+            }
+        }
+
+        // ==================== 3. RAYCASTER PARA PREVENIR TUNELIZACIÓN A ALTA VELOCIDAD ====================
+        if (game && game.collidableMeshes && game.collidableMeshes.length > 0 && this.velocity.lengthSq() > 0.002) {
+            const moveDir = this.velocity.clone().normalize();
+            const moveDist = this.velocity.length() + this.playerRadius;
+            this.raycaster.set(this.position, moveDir);
+            const hits = this.raycaster.intersectObjects(game.collidableMeshes, false);
+            if (hits.length > 0 && hits[0].distance < moveDist) {
+                const hit = hits[0];
+                const hitNormal = hit.face ? hit.face.normal.clone() : moveDir.clone().negate();
+                const push = (moveDist - hit.distance);
+                this.position.addScaledVector(hitNormal, push);
+                const dot = this.velocity.dot(hitNormal);
+                if (dot < 0) {
+                    this.velocity.sub(hitNormal.multiplyScalar(dot));
+                }
+            }
+        }
+    }
+
+    update(movementVector, isMoving) {
+        // Parpadeo de invulnerabilidad
+        if (this.invulnTimer > 0) {
+            this.invulnTimer--;
+            this.group.visible = Math.floor(this.invulnTimer / 4) % 2 === 0;
+        } else {
+            this.group.visible = true;
+        }
+
+        if (this.dashCooldown > 0) this.dashCooldown--;
+        if (this.attackCooldown > 0) this.attackCooldown--;
+
+        // Animación de coletazo / vórtice
+        if (this.isAttacking) {
+            this.attackTimer--;
+            this.vortexSprite.material.rotation += 0.35;
+            this.vortexSprite.scale.addScalar(0.08);
+            if (this.attackTimer <= 0) {
+                this.isAttacking = false;
+                this.vortexSprite.material.opacity = 0;
+                this.vortexSprite.scale.set(4.5, 4.5, 1.0);
+            }
+        }
+
+        if (this.dashTimer > 0) {
+            this.dashTimer--;
+            if (this.dashTimer <= 0) this.isDashing = false;
+        }
+
+        // Integración de aceleración y velocidad
+        if (!this.isDashing) {
+            this.velocity.lerp(movementVector.clone().multiplyScalar(this.speed), 0.18);
+        } else {
+            this.velocity.multiplyScalar(0.94);
+        }
+
+        this.position.add(this.velocity);
+
+        // Resolver colisiones con lecho marino y estructuras del arrecife
+        this.resolveCollisions();
+
+        // Ondulación natural de flotación marina y nado
+        const waveSpeed = this.isDashing ? 0.28 : (isMoving ? 0.16 : 0.07);
+        this.swimCycleTime += waveSpeed;
+        const bobbing = Math.sin(this.swimCycleTime) * 0.12;
+        this.tailSprite.position.y = 0.4 + bobbing;
+        this.topSprite.position.y = 1.35 + bobbing;
+        this.headbandSprite.position.y = 2.15 + bobbing;
+
+        // Inclinación suave (Roll) del Sprite al girar o nadar lateralmente
+        const targetRoll = -movementVector.x * 0.14;
+        const currentRot = this.tailSprite.material.rotation;
+        const nextRot = THREE.MathUtils.lerp(currentRot, targetRoll, 0.15);
+        this.tailSprite.material.rotation = nextRot;
+        this.topSprite.material.rotation = nextRot;
+        this.headbandSprite.material.rotation = nextRot;
+
+        // Rastro de burbujas en movimiento
+        if (this.velocity.length() > 0.25 && Math.random() < 0.28) {
+            game.spawnBubbles(this.position.clone().add(new THREE.Vector3(0, -1.8, 0)), 1);
+        }
+    }
+}
+
+class CrystalFragment3D {
+    constructor(scene, position, typeKey, displayName, colorHex) {
+        this.scene = scene;
+        this.position = position.clone();
+        this.typeKey = typeKey;
+        this.displayName = displayName;
+        this.colorHex = colorHex;
+        this.collected = false;
+
+        this.group = new THREE.Group();
+        this.group.position.copy(position);
+        this.scene.add(this.group);
+
+        this.buildMesh();
+    }
+
+    buildMesh() {
+        const texture = loadTextureSafe(this.typeKey, `sprites/${this.typeKey}.png`);
+        const spriteMat = new THREE.SpriteMaterial({
+            map: texture,
+            transparent: true,
+            color: 0xffffff
+        });
+        this.sprite = new THREE.Sprite(spriteMat);
+        this.sprite.scale.set(3.2, 3.6, 1);
+        this.group.add(this.sprite);
+
+        const gemGeo = new THREE.OctahedronGeometry(1.2, 0);
+        const gemMat = new THREE.MeshStandardMaterial({
+            color: this.colorHex,
+            roughness: 0.1,
+            metalness: 0.8,
+            emissive: this.colorHex,
+            emissiveIntensity: 0.6,
+            transparent: true,
+            opacity: 0.65
+        });
+        this.gemMesh = new THREE.Mesh(gemGeo, gemMat);
+        this.group.add(this.gemMesh);
+
+        const beamGeo = new THREE.CylinderGeometry(0.12, 0.35, 25, 8);
+        const beamMat = new THREE.MeshBasicMaterial({
+            color: this.colorHex,
+            transparent: true,
+            opacity: 0.22,
+            depthWrite: false
+        });
+        const beam = new THREE.Mesh(beamGeo, beamMat);
+        beam.position.y = 12;
+        this.group.add(beam);
+
+        const pedGeo = new THREE.CylinderGeometry(1.2, 1.8, 1.6, 8);
+        const pedMat = new THREE.MeshStandardMaterial({ color: 0x06283d, roughness: 0.8 });
+        const ped = new THREE.Mesh(pedGeo, pedMat);
+        ped.position.y = -1.2;
+        this.group.add(ped);
+    }
+
+    update() {
+        if (this.collected) return;
+        this.gemMesh.rotation.y += 0.028;
+        this.gemMesh.rotation.x += 0.012;
+        this.group.position.y = this.position.y + Math.sin(Date.now() * 0.0035 + this.position.x) * 0.45;
+    }
+
+    destroy() {
+        this.collected = true;
+        this.scene.remove(this.group);
+    }
+}
+
+class CorruptUrchin3D {
+    constructor(scene, position, spriteKey = 'erizo_1') {
+        this.scene = scene;
+        this.spriteKey = spriteKey;
+        this.health = 2;
+        this.isDead = false;
+        this.radius = 1.8;
+        this.speed = 0.12;
+        this.originPos = position.clone();
+
+        this.group = new THREE.Group();
+        this.group.position.copy(position);
+        this.scene.add(this.group);
+
+        this.buildMesh();
+    }
+
+    buildMesh() {
+        const texture = loadTextureSafe(this.spriteKey, `sprites/${this.spriteKey}.png`);
+        const spriteMat = new THREE.SpriteMaterial({
+            map: texture,
+            transparent: true,
+            color: 0xffffff
+        });
+        this.sprite = new THREE.Sprite(spriteMat);
+        this.sprite.scale.set(3.0, 3.0, 1);
+        this.group.add(this.sprite);
+
+        const coreGeo = new THREE.SphereGeometry(1.0, 10, 10);
+        const coreMat = new THREE.MeshStandardMaterial({
+            color: 0x581c87,
+            roughness: 0.6,
+            emissive: 0x3b0764,
+            emissiveIntensity: 0.4
+        });
+        this.core = new THREE.Mesh(coreGeo, coreMat);
+        this.group.add(this.core);
+
+        for (let i = 0; i < 12; i++) {
+            const spikeGeo = new THREE.ConeGeometry(0.12, 1.4, 4);
+            const spikeMat = new THREE.MeshStandardMaterial({ color: 0x2e1065 });
+            const spike = new THREE.Mesh(spikeGeo, spikeMat);
+            spike.position.set(
+                (Math.random() - 0.5) * 1.5,
+                (Math.random() - 0.5) * 1.5,
+                (Math.random() - 0.5) * 1.5
+            );
+            spike.lookAt(this.group.position);
+            this.group.add(spike);
+        }
+    }
+
+    takeDamage(amount, knockbackFrom) {
+        this.health -= amount;
+        audio.playEnemyHit();
+
+        const kb = this.group.position.clone().sub(knockbackFrom).normalize();
+        this.group.position.add(kb.multiplyScalar(4.0));
+
+        game.spawnBubbles(this.group.position, 14, 0xa855f7);
+
+        if (this.health <= 0) {
+            this.isDead = true;
+            this.scene.remove(this.group);
+            state.pearls += 2;
+            persistData();
+            audio.playEnemyDefeated();
+            audio.playCollect();
+            game.showToast("¡Erizo Purificado! (+2 Perlas Mágicas)");
+        }
+    }
+
+    update(playerPos) {
+        if (this.isDead) return;
+
+        const dist = this.group.position.distanceTo(playerPos);
+        if (dist < 16) {
+            const dir = playerPos.clone().sub(this.group.position).normalize();
+            this.group.position.add(dir.multiplyScalar(this.speed));
+            this.core.material.emissiveIntensity = 0.8;
+        } else {
+            this.group.position.x = this.originPos.x + Math.sin(Date.now() * 0.002 + this.originPos.z) * 4.5;
+            this.group.position.y = this.originPos.y + Math.cos(Date.now() * 0.003 + this.originPos.x) * 1.2;
+            this.core.material.emissiveIntensity = 0.3;
+        }
+
+        const solidDist = this.radius + 1.25;
+        if (dist < solidDist && dist > 0.0001) {
+            // FÍSICA SÓLIDA: La sirena no puede atravesar al enemigo
+            const normal = playerPos.clone().sub(this.group.position).normalize();
+            const overlap = solidDist - dist;
+            game.player.position.addScaledVector(normal, overlap);
+
+            // Deflexión de velocidad e impulso de rebote físico
+            const vDot = game.player.velocity.dot(normal);
+            if (vDot < 0) {
+                game.player.velocity.sub(normal.clone().multiplyScalar(vDot * 1.6));
+            }
+            // Ligero retroceso mutuo del enemigo
+            this.group.position.addScaledVector(normal, -overlap * 0.35);
+
+            game.player.takeDamage();
+        }
+    }
+}
+
+class PearlCollectible3D {
+    constructor(scene, position) {
+        this.scene = scene;
+        this.group = new THREE.Group();
+        this.group.position.copy(position);
+        this.scene.add(this.group);
+        this.collected = false;
+
+        const geo = new THREE.SphereGeometry(0.55, 16, 16);
+        const mat = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 0.1,
+            metalness: 0.9,
+            emissive: 0xfef08a,
+            emissiveIntensity: 0.5
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        this.group.add(mesh);
+    }
+    update() {
+        if (this.collected) return;
+        this.group.rotation.y += 0.04;
+        this.group.position.y += Math.sin(Date.now() * 0.004 + this.group.position.x) * 0.015;
+    }
+    destroy() {
+        this.collected = true;
+        this.scene.remove(this.group);
+    }
+}
+
+// ====================================================================
+// --- 6. CONTROLADOR PRINCIPAL DEL JUEGO 3D ---
+// ====================================================================
+
+class SeaGameController {
+    constructor() {
+        this.container = document.getElementById('three-container');
+        this.scene = null;
+        this.camera = null;
+        this.renderer = null;
+
+        this.player = null;
+        this.crystals = [];
+        this.enemies = [];
+        this.pearls = [];
+        this.bubbles = [];
+
+        this.keys = {};
+        this.isMouseDown = false;
+
+        this.cameraYaw = 0;
+        this.cameraPitch = 0.15;
+        this.cameraDistance = 6.2;
+
+        this.initThree();
+        this.bindEvents();
+    }
+
+    initThree() {
+        this.scene = new THREE.Scene();
+        
+        // ==================== 4. ENTORNO MARINO INMERSIVO (SEGÚN IMAGEN DE REFERENCIA) ====================
+        // Fondo oceánico azul profundo y niebla volumétrica turquesa
+        const oceanBgColor = new THREE.Color(0x024564);
+        this.scene.background = oceanBgColor;
+        this.scene.fog = new THREE.FogExp2(0x024564, 0.0125);
+
+        this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 450);
+
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.outputEncoding = THREE.sRGBEncoding;
+        this.container.appendChild(this.renderer.domElement);
+
+        // --- ILUMINACIÓN INMERSIVA ---
+        // 1. Rayos solares directos desde la superficie oceánica (Sol Cenital)
+        this.sun = new THREE.DirectionalLight(0xe0f7fa, 1.85);
+        this.sun.position.set(20, 80, 20);
+        this.scene.add(this.sun);
+
+        // 2. Luz de relleno turquesa para sombras submarinas suaves
+        const fillLight = new THREE.DirectionalLight(0x22d3ee, 0.75);
+        fillLight.position.set(-30, 50, -25);
+        this.scene.add(fillLight);
+
+        // 3. Luz hemisférica bicolor: Cielo aqua brillante (arriba) y Arena cálida (abajo)
+        const hemiLight = new THREE.HemisphereLight(0x38bdf8, 0x164e63, 1.15);
+        this.scene.add(hemiLight);
+
+        // 4. Rayos solares submarinos volumétricos (God Rays)
+        this.sunRays = [];
+        for (let i = 0; i < 9; i++) {
+            const rayGeo = new THREE.CylinderGeometry(0.8 + Math.random() * 1.5, 3.8 + Math.random() * 3.0, 38, 12, 1, true);
+            const rayMat = new THREE.MeshBasicMaterial({
+                color: 0x7dd3fc,
+                transparent: true,
+                opacity: 0.14,
+                blending: THREE.AdditiveBlending,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            });
+            const rayMesh = new THREE.Mesh(rayGeo, rayMat);
+            rayMesh.position.set((Math.random() - 0.5) * 60, 16, (Math.random() - 0.5) * 60);
+            rayMesh.rotation.z = (Math.random() - 0.5) * 0.22;
+            rayMesh.rotation.x = (Math.random() - 0.5) * 0.22;
+            this.scene.add(rayMesh);
+            this.sunRays.push(rayMesh);
+        }
+
+        // 5. Partículas de plancton bioluminiscente en suspensión marina
+        const moteCount = 180;
+        const moteGeo = new THREE.BufferGeometry();
+        const motePos = new Float32Array(moteCount * 3);
+        for (let i = 0; i < moteCount * 3; i += 3) {
+            motePos[i] = (Math.random() - 0.5) * 140;
+            motePos[i + 1] = Math.random() * 26 + 1;
+            motePos[i + 2] = (Math.random() - 0.5) * 140;
+        }
+        moteGeo.setAttribute('position', new THREE.BufferAttribute(motePos, 3));
+        const moteMat = new THREE.PointsMaterial({
+            color: 0xa5f3fc,
+            size: 0.35,
+            transparent: true,
+            opacity: 0.65,
+            blending: THREE.AdditiveBlending
+        });
+        this.planktonParticles = new THREE.Points(moteGeo, moteMat);
+        this.scene.add(this.planktonParticles);
+
+        // --- MATERIAL DEL LECHO MARINO (ARENA CON RED DE CÁUSTICAS) ---
+        this.causticsTex = this.createCausticsCanvasTexture();
+        this.causticsTex.wrapS = THREE.RepeatWrapping;
+        this.causticsTex.wrapT = THREE.RepeatWrapping;
+        this.causticsTex.repeat.set(16, 16);
+
+        const floorGeo = new THREE.PlaneGeometry(220, 220, 52, 52);
+        floorGeo.rotateX(-Math.PI / 2);
+        const posAttr = floorGeo.attributes.position;
+        for (let i = 0; i < posAttr.count; i++) {
+            const x = posAttr.getX(i);
+            const z = posAttr.getZ(i);
+            posAttr.setY(i, getSeabedHeight(x, z));
+        }
+        floorGeo.computeVertexNormals();
+
+        const floorMat = new THREE.MeshStandardMaterial({
+            map: this.causticsTex,
+            color: 0xdfd3a8,
+            roughness: 0.82,
+            metalness: 0.04
+        });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.position.y = 0;
+        this.scene.add(floor);
+
+        // --- MATERIAL DEL AGUA (SUPERFICIE / TECHO OCEÁNICO) ---
+        const waterGeo = new THREE.PlaneGeometry(220, 220, 24, 24);
+        waterGeo.rotateX(Math.PI / 2);
+        this.waterMesh = new THREE.Mesh(waterGeo, new THREE.MeshStandardMaterial({
+            color: 0x38bdf8,
+            roughness: 0.15,
+            metalness: 0.2,
+            transparent: true,
+            opacity: 0.55,
+            emissive: 0x0284c7,
+            emissiveIntensity: 0.35,
+            side: THREE.DoubleSide
+        }));
+        this.waterMesh.position.y = 28;
+        this.scene.add(this.waterMesh);
+
+        // Listas para colisionadores físicos de estructuras del arrecife
+        this.reefColliders = [];
+        this.collidableMeshes = [];
+
+        this.buildReefEnvironment();
+
+        this.player = new Mermaid3DArticulated(this.scene);
+    }
+
+    createCausticsCanvasTexture() {
+        const c = document.createElement('canvas');
+        c.width = 256;
+        c.height = 256;
+        const ctx = c.getContext('2d');
+
+        // Fondo de arena cálida dorada de arrecife
+        ctx.fillStyle = '#caa36e';
+        ctx.fillRect(0, 0, 256, 256);
+
+        const grad = ctx.createLinearGradient(0, 0, 256, 256);
+        grad.addColorStop(0, '#d8b47e');
+        grad.addColorStop(0.5, '#c59d68');
+        grad.addColorStop(1, '#baa072');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 256, 256);
+
+        // Red de cáusticas marinas luminosas
+        ctx.strokeStyle = 'rgba(235, 253, 255, 0.45)';
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        const points = [
+            [40, 50], [130, 40], [210, 60],
+            [70, 130], [160, 140], [230, 160],
+            [50, 220], [140, 210], [210, 230]
+        ];
+
+        points.forEach(([x, y]) => {
+            ctx.beginPath();
+            ctx.arc(x, y, 26 + Math.sin(x) * 6, 0, Math.PI * 2);
+            ctx.stroke();
+        });
+
+        for (let i = 0; i < points.length - 1; i++) {
+            ctx.beginPath();
+            ctx.moveTo(points[i][0], points[i][1]);
+            const next = points[i + 1];
+            ctx.quadraticCurveTo((points[i][0] + next[0]) / 2 + 10, (points[i][1] + next[1]) / 2 - 8, next[0], next[1]);
+            ctx.stroke();
+        }
+
+        return new THREE.CanvasTexture(c);
+    }
+
+    buildReefEnvironment() {
+        const texCoral1 = loadTextureSafe('coral_1', 'sprites/coral_1.png');
+        const texCoral2 = loadTextureSafe('coral_2', 'sprites/coral_2.png');
+
+        this.reefColliders = [];
+        this.collidableMeshes = [];
+
+        // 1. Estructuras rocosas del arrecife asentadas sobre el lecho marino con colisiones físicas
+        for (let i = 0; i < 45; i++) {
+            const rx = (Math.random() - 0.5) * 130;
+            const rz = (Math.random() - 0.5) * 130;
+            const seabedY = getSeabedHeight(rx, rz);
+            const rockRadius = Math.random() * 2.2 + 1.2;
+
+            const rockGeo = new THREE.DodecahedronGeometry(rockRadius, 0);
+            const rockMat = new THREE.MeshStandardMaterial({
+                color: i % 2 === 0 ? 0x1b3b5a : 0x224869,
+                roughness: 0.88,
+                metalness: 0.12
+            });
+            const rock = new THREE.Mesh(rockGeo, rockMat);
+            rock.position.set(rx, seabedY + rockRadius * 0.75, rz);
+            rock.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+            this.scene.add(rock);
+
+            // Registrar colisionador esférico sólido y malla para Raycaster
+            this.reefColliders.push({
+                type: 'sphere',
+                pos: rock.position.clone(),
+                radius: rockRadius * 1.05
+            });
+            this.collidableMeshes.push(rock);
+
+            // Vegetación de coral bioluminiscente
+            const isCoral1 = Math.random() > 0.5;
+            const tex = isCoral1 ? texCoral1 : texCoral2;
+            const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+            const sprite = new THREE.Sprite(mat);
+            const s = Math.random() * 3.5 + 3.0;
+            sprite.scale.set(s, s, 1);
+            sprite.position.set(rx, seabedY + rockRadius + s * 0.4, rz);
+            this.scene.add(sprite);
+        }
+
+        // 2. Grandes arcos marinos ancestrales (con pilares sólidos infranqueables)
+        for (let i = 0; i < 4; i++) {
+            const archRadius = 8.5;
+            const tubeRadius = 2.4;
+            const archGeo = new THREE.TorusGeometry(archRadius, tubeRadius, 10, 24, Math.PI);
+            const archMat = new THREE.MeshStandardMaterial({
+                color: 0x163450,
+                roughness: 0.82,
+                metalness: 0.18
+            });
+            const arch = new THREE.Mesh(archGeo, archMat);
+            const ax = (i - 1.5) * 35;
+            const az = (i % 2 === 0 ? 25 : -25);
+            const aSeabedY = getSeabedHeight(ax, az);
+            arch.position.set(ax, aSeabedY + 1.2, az);
+            const aRotY = (i * 0.75);
+            arch.rotation.y = aRotY;
+            this.scene.add(arch);
+
+            this.collidableMeshes.push(arch);
+
+            const cosR = Math.cos(aRotY);
+            const sinR = Math.sin(aRotY);
+            const pLeft = new THREE.Vector3(ax - archRadius * cosR, aSeabedY, az - archRadius * sinR);
+            const pRight = new THREE.Vector3(ax + archRadius * cosR, aSeabedY, az + archRadius * sinR);
+
+            this.reefColliders.push({
+                type: 'cylinder',
+                pos: pLeft,
+                radius: tubeRadius * 1.35,
+                minY: aSeabedY - 1,
+                maxY: aSeabedY + archRadius + 2
+            });
+            this.reefColliders.push({
+                type: 'cylinder',
+                pos: pRight,
+                radius: tubeRadius * 1.35,
+                minY: aSeabedY - 1,
+                maxY: aSeabedY + archRadius + 2
+            });
+        }
+    }
+
+    bindEvents() {
+        window.addEventListener('resize', () => {
+            this.camera.aspect = window.innerWidth / window.innerHeight;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.addEventListener('keydown', (e) => {
+            this.keys[e.key] = true;
+            this.keys[e.code] = true;
+
+            audio.init();
+
+            if (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape' || e.key === 'e' || e.key === 'E' || e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd') {
+                this.closeDialogue();
+            }
+
+            if (state.screen === 'play') {
+                if (e.code === 'KeyP' || e.key === 'p' || e.key === 'P' || e.code === 'Escape') {
+                    if (state.pointerLocked) {
+                        try { document.exitPointerLock(); } catch(err) {}
+                    }
+                    togglePause();
+                    e.preventDefault();
+                    return;
+                }
+
+                if (e.code === 'KeyM' || e.key === 'm' || e.key === 'M') {
+                    audio.toggleMusic();
+                    return;
+                }
+
+                if (e.code === 'KeyF' || e.key === 'f' || e.key === 'F') {
+                    if (state.pointerLocked) {
+                        try { document.exitPointerLock(); } catch(err) {}
+                    } else {
+                        this.requestPointerLock();
+                    }
+                    return;
+                }
+
+                if (!state.isPaused) {
+                    if (e.code === 'Space') {
+                        this.player.dash();
+                        e.preventDefault();
+                    }
+                    if (e.key === 'z' || e.key === 'Z') {
+                        this.player.attack();
+                    }
+                }
+            } else if (state.screen === 'pause') {
+                if (e.code === 'Escape' || e.code === 'KeyP' || e.key === 'p' || e.key === 'P') {
+                    togglePause();
+                    e.preventDefault();
+                }
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            this.keys[e.key] = false;
+            this.keys[e.code] = false;
+        });
+
+        let isMouseDownOnCanvas = false;
+        let lastClientX = null;
+        let lastClientY = null;
+        let mouseDragDistance = 0;
+
+        window.addEventListener('mousedown', (e) => {
+            audio.init();
+
+            if (e.target.closest('button') || e.target.closest('#dialogue-box') || e.target.closest('.hud-glass') || e.target.closest('.overlay-screen:not(.hidden)')) {
+                return;
+            }
+
+            const box = document.getElementById('dialogue-box');
+            if (!box.classList.contains('hidden')) {
+                this.closeDialogue();
+                return;
+            }
+
+            if (state.screen === 'play' && !state.isPaused) {
+                isMouseDownOnCanvas = true;
+                mouseDragDistance = 0;
+                lastClientX = e.clientX;
+                lastClientY = e.clientY;
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (state.screen !== 'play' || state.isPaused) {
+                lastClientX = e.clientX;
+                lastClientY = e.clientY;
+                return;
+            }
+
+            if (state.pointerLocked || isMouseDownOnCanvas) {
+                let dx = 0;
+                let dy = 0;
+
+                if (state.pointerLocked) {
+                    dx = e.movementX || 0;
+                    dy = e.movementY || 0;
+                } else if (lastClientX !== null && lastClientY !== null) {
+                    dx = e.clientX - lastClientX;
+                    dy = e.clientY - lastClientY;
+                    mouseDragDistance += Math.abs(dx) + Math.abs(dy);
+                }
+
+                const sensitivity = 0.0036;
+
+                this.cameraYaw -= dx * sensitivity;
+                this.cameraPitch -= dy * sensitivity;
+                this.cameraPitch = Math.max(-1.22, Math.min(1.22, this.cameraPitch));
+            }
+
+            lastClientX = e.clientX;
+            lastClientY = e.clientY;
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            if (state.screen !== 'play' || state.isPaused) {
+                isMouseDownOnCanvas = false;
+                return;
+            }
+
+            const wasDragging = isMouseDownOnCanvas && mouseDragDistance > 7;
+            isMouseDownOnCanvas = false;
+
+            if (!wasDragging && !e.target.closest('button') && !e.target.closest('#dialogue-box') && !e.target.closest('.hud-glass')) {
+                if (e.button === 0) {
+                    this.player.attack();
+                } else if (e.button === 2) {
+                    this.player.dash();
+                }
+            }
+        });
+
+        window.addEventListener('wheel', (e) => {
+            if (state.screen !== 'play') return;
+            this.cameraDistance += e.deltaY * 0.005;
+            this.cameraDistance = Math.max(3.5, Math.min(9.5, this.cameraDistance));
+        });
+
+        window.addEventListener('contextmenu', (e) => {
+            if (state.screen === 'play') e.preventDefault();
+        });
+
+        document.addEventListener('pointerlockchange', () => {
+            state.pointerLocked = document.pointerLockElement === this.renderer.domElement;
+            const btnText = document.getElementById('pointerlock-text');
+            const hint = document.getElementById('pointerlock-hint');
+            if (btnText) {
+                btnText.innerText = state.pointerLocked ? '🔓 Liberar Flecha' : '🎯 Fijar Cámara';
+            }
+            if (hint) {
+                if (state.pointerLocked) {
+                    hint.classList.remove('hidden');
+                } else {
+                    hint.classList.add('hidden');
+                }
+            }
+        });
+
+        document.getElementById('btn-toggle-pointerlock').onclick = (e) => {
+            e.stopPropagation();
+            if (state.pointerLocked) {
+                try { document.exitPointerLock(); } catch(err) {}
+            } else {
+                this.requestPointerLock();
+            }
+        };
+
+        document.getElementById('btn-toggle-music').onclick = (e) => {
+            e.stopPropagation();
+            audio.init();
+            audio.toggleMusic();
+        };
+
+        document.getElementById('btn-pause-music').onclick = (e) => {
+            e.stopPropagation();
+            audio.init();
+            audio.toggleMusic();
+        };
+
+        const dialogueBox = document.getElementById('dialogue-box');
+        dialogueBox.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.closeDialogue();
+        });
+
+        document.getElementById('dialogue-next').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.closeDialogue();
+        });
+
+        document.getElementById('dialogue-close-x').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.closeDialogue();
+        });
+    }
+
+    requestPointerLock() {
+        try {
+            this.renderer.domElement.requestPointerLock();
+        } catch(e) {}
+    }
+
+    closeDialogue() {
+        const box = document.getElementById('dialogue-box');
+        box.classList.add('hidden');
+        clearTimeout(this.dialogueTimeout);
+    }
+
+    showDialogue(text, speaker = "Sirena") {
+        const box = document.getElementById('dialogue-box');
+        document.getElementById('dialogue-speaker').innerText = speaker;
+        document.getElementById('dialogue-text').innerText = text;
+        box.classList.remove('hidden');
+
+        clearTimeout(this.dialogueTimeout);
+        this.dialogueTimeout = setTimeout(() => {
+            box.classList.add('hidden');
+        }, 8000);
+    }
+
+    showToast(message) {
+        const toast = document.getElementById('game-toast');
+        document.getElementById('game-toast-text').innerText = message;
+        toast.classList.remove('hidden');
+        clearTimeout(this.toastTimeout);
+        this.toastTimeout = setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 3200);
+    }
+
+    spawnBubbles(pos, count = 10, colorHex = 0xffffff) {
+        for (let i = 0; i < count; i++) {
+            const geo = new THREE.SphereGeometry(Math.random() * 0.18 + 0.08, 6, 6);
+            const mat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.75 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(pos).add(new THREE.Vector3(
+                (Math.random() - 0.5) * 1.4,
+                (Math.random() - 0.5) * 1.4,
+                (Math.random() - 0.5) * 1.4
+            ));
+            this.scene.add(mesh);
+            this.bubbles.push({ mesh, velY: Math.random() * 0.12 + 0.06, life: 60 });
+        }
+    }
+
+    hitEnemiesInRadius(origin, radius, damage) {
+        this.enemies.forEach(enemy => {
+            if (enemy.isDead) return;
+            const dist = enemy.group.position.distanceTo(origin);
+            if (dist <= radius) {
+                enemy.takeDamage(damage, origin);
+            }
+        });
+    }
+
+    startLevel1() {
+        audio.init();
+        state.freeSwim = false;
+
+        this.crystals.forEach(c => c.destroy());
+        this.crystals = [];
+        this.enemies.forEach(e => { if (!e.isDead) this.scene.remove(e.group); });
+        this.enemies = [];
+        this.pearls.forEach(p => { if (!p.collected) this.scene.remove(p.group); });
+        this.pearls = [];
+
+        const startY = Math.max(5.5, getSeabedHeight(0, -30) + 3.8);
+        this.player.position.set(0, startY, -30);
+        this.player.rotation.set(0, 0, 0);
+        this.player.health = 3;
+        this.player.updateCustomization();
+
+        ['cian', 'rosa', 'violeta'].forEach(color => {
+            const slot = document.getElementById(`slot-cristal-${color}`);
+            slot.classList.remove('active');
+            slot.style.opacity = '0.35';
+        });
+
+        const c1Y = getSeabedHeight(-22, 12) + 3.8;
+        const c2Y = getSeabedHeight(26, 28) + 3.8;
+        const c3Y = getSeabedHeight(-4, 52) + 3.8;
+        this.crystals.push(new CrystalFragment3D(this.scene, new THREE.Vector3(-22, c1Y, 12), 'cristal_cian', 'Fragmento Cian', 0x06b6d4));
+        this.crystals.push(new CrystalFragment3D(this.scene, new THREE.Vector3(26, c2Y, 28), 'cristal_rosa', 'Fragmento Rosa', 0xf43f5e));
+        this.crystals.push(new CrystalFragment3D(this.scene, new THREE.Vector3(-4, c3Y, 52), 'cristal_violeta', 'Fragmento Violeta', 0xa855f7));
+
+        const urchinPositions = [
+            new THREE.Vector3(-18, getSeabedHeight(-18, 10) + 3.2, 10),
+            new THREE.Vector3(22, getSeabedHeight(22, 24) + 3.2, 24),
+            new THREE.Vector3(28, getSeabedHeight(28, 32) + 3.2, 32),
+            new THREE.Vector3(-8, getSeabedHeight(-8, 48) + 3.2, 48),
+            new THREE.Vector3(6, getSeabedHeight(6, 54) + 3.2, 54),
+            new THREE.Vector3(0, getSeabedHeight(0, -10) + 3.2, -10)
+        ];
+        urchinPositions.forEach((pos, idx) => {
+            const key = idx % 3 === 0 ? 'erizo_1' : (idx % 3 === 1 ? 'erizo_2' : 'erizo_3');
+            this.enemies.push(new CorruptUrchin3D(this.scene, pos, key));
+        });
+
+        for (let i = 0; i < 8; i++) {
+            const px = (Math.random() - 0.5) * 80;
+            const pz = (Math.random() - 0.5) * 80;
+            const py = getSeabedHeight(px, pz) + Math.random() * 4 + 3.5;
+            this.pearls.push(new PearlCollectible3D(this.scene, new THREE.Vector3(px, py, pz)));
+        }
+
+        switchScreen('play');
+        audio.init();
+
+        this.showDialogue(
+            "El Arrecife Perdido está sumido en la penumbra. Tres fragmentos de perla mágica están ocultos entre los corales. Usa [A] para nadar a la izquierda, [D] a la derecha y [P] para pausar.",
+            "Sirena · Guardiana del Mar"
+        );
+    }
+
+    onCrystalCollected(crystal) {
+        crystal.destroy();
+        audio.playCollectFragment();
+        this.spawnBubbles(crystal.group.position, 20, crystal.colorHex);
+
+        if (crystal.typeKey === 'cristal_cian') {
+            const s = document.getElementById('slot-cristal-cian');
+            s.classList.add('active');
+            s.style.opacity = '1';
+        } else if (crystal.typeKey === 'cristal_rosa') {
+            const s = document.getElementById('slot-cristal-rosa');
+            s.classList.add('active');
+            s.style.opacity = '1';
+        } else if (crystal.typeKey === 'cristal_violeta') {
+            const s = document.getElementById('slot-cristal-violeta');
+            s.classList.add('active');
+            s.style.opacity = '1';
+        }
+
+        const remaining = this.crystals.filter(c => !c.collected).length;
+        this.showToast(`¡${crystal.displayName} Recuperado! Faltan ${remaining}`);
+
+        if (remaining === 0) {
+            setTimeout(() => {
+                this.onLevelVictory();
+            }, 800);
+        }
+    }
+
+    onLevelVictory() {
+        audio.playVictory();
+        this.spawnBubbles(this.player.position, 40, 0x38bdf8);
+
+        state.pearls += 5;
+        TAIL_SKINS.tail_coral.unlocked = true;
+        persistData();
+
+        switchScreen('victory');
+    }
+
+    onDefeat() {
+        switchScreen('gameover');
+    }
+
+    update() {
+        if (state.screen !== 'play' || state.isPaused) return;
+
+        // ==================== CÁLCULO DE MOVIMIENTO Y VECTORES DE DIRECCIÓN ====================
+        const forward = new THREE.Vector3();
+        this.camera.getWorldDirection(forward);
+        forward.y = 0;
+        forward.normalize();
+
+        // Vector lateral derecho exacto (forward x Up)
+        const right = new THREE.Vector3();
+        right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+        // Vector lateral izquierdo exacto
+        const left = right.clone().negate();
+
+        let moveVector = new THREE.Vector3();
+        let isMoving = false;
+
+        if (this.keys.w || this.keys.W || this.keys.ArrowUp) {
+            moveVector.add(forward);
+            moveVector.y += Math.sin(this.cameraPitch) * 0.7;
+            isMoving = true;
+        }
+        if (this.keys.s || this.keys.S || this.keys.ArrowDown) {
+            moveVector.sub(forward);
+            moveVector.y -= Math.sin(this.cameraPitch) * 0.7;
+            isMoving = true;
+        }
+
+        // [A] = SIEMPRE IZQUIERDA en pantalla
+        if (this.keys.a || this.keys.A || this.keys.ArrowLeft) {
+            moveVector.add(left);
+            isMoving = true;
+        }
+        // [D] = SIEMPRE DERECHA en pantalla
+        if (this.keys.d || this.keys.D || this.keys.ArrowRight) {
+            moveVector.add(right);
+            isMoving = true;
+        }
+
+        if (this.keys.e || this.keys.E) {
+            moveVector.y += 0.8;
+            isMoving = true;
+        }
+        if (this.keys.q || this.keys.Q) {
+            moveVector.y -= 0.8;
+            isMoving = true;
+        }
+
+        if (moveVector.lengthSq() > 0) {
+            moveVector.normalize();
+            const targetYaw = Math.atan2(moveVector.x, moveVector.z);
+            let diff = targetYaw - this.player.rotation.y;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            this.player.rotation.y += diff * 0.16;
+        }
+
+        if (isMoving) {
+            const box = document.getElementById('dialogue-box');
+            if (!box.classList.contains('hidden') && !this.autoClosedOnce) {
+                this.closeDialogue();
+                this.autoClosedOnce = true;
+            }
+        }
+
+        this.player.update(moveVector, isMoving);
+
+        // ==================== CÁMARA 3RA PERSONA ORBITAL ====================
+        const lookDir = new THREE.Vector3(
+            Math.sin(this.cameraYaw) * Math.cos(this.cameraPitch),
+            Math.sin(this.cameraPitch),
+            Math.cos(this.cameraYaw) * Math.cos(this.cameraPitch)
+        );
+
+        const targetPos = this.player.position.clone().add(new THREE.Vector3(0, 1.4, 0));
+        const desiredCamPos = targetPos.clone().sub(lookDir.clone().multiplyScalar(this.cameraDistance));
+        
+        // Evitar que la cámara atraviese el suelo marino
+        const camSeabedY = getSeabedHeight(desiredCamPos.x, desiredCamPos.z);
+        desiredCamPos.y = Math.max(camSeabedY + 2.2, desiredCamPos.y);
+
+        this.camera.position.lerp(desiredCamPos, 0.14);
+        this.camera.lookAt(targetPos);
+
+        // Cristales
+        let nearestDist = 999;
+        let nearestName = "";
+
+        this.crystals.forEach(c => {
+            if (c.collected) return;
+            c.update();
+            const dist = c.group.position.distanceTo(this.player.position);
+            if (dist < nearestDist) {
+                nearestDist = dist;
+                nearestName = c.displayName;
+            }
+            if (dist < 2.8) {
+                this.onCrystalCollected(c);
+            }
+        });
+
+        // Erizos
+        this.enemies.forEach(e => e.update(this.player.position));
+
+        // Perlas
+        this.pearls.forEach(p => {
+            if (p.collected) return;
+            p.update();
+            if (p.group.position.distanceTo(this.player.position) < 2.0) {
+                p.destroy();
+                state.pearls += 1;
+                persistData();
+                audio.playCollect();
+                game.spawnBubbles(p.group.position, 8, 0xfde047);
+            }
+        });
+
+        // Burbujas
+        for (let i = this.bubbles.length - 1; i >= 0; i--) {
+            const b = this.bubbles[i];
+            b.mesh.position.y += b.velY;
+            b.life--;
+            if (b.life <= 0) {
+                this.scene.remove(b.mesh);
+                this.bubbles.splice(i, 1);
+            }
+        }
+
+        // ==================== ANIMACIONES DEL ECOSISTEMA MARINO ====================
+        // Desplazamiento ondulante de las cáusticas solares sobre la arena dorada
+        if (this.causticsTex) {
+            this.causticsTex.offset.x += 0.0003;
+            this.causticsTex.offset.y += 0.0002;
+        }
+
+        // Rayos solares submarinos fluctuantes y partículas de plancton
+        if (this.sunRays) {
+            const time = Date.now() * 0.0012;
+            for (let i = 0; i < this.sunRays.length; i++) {
+                this.sunRays[i].material.opacity = 0.11 + Math.sin(time + i * 1.2) * 0.04;
+            }
+        }
+        if (this.planktonParticles) {
+            this.planktonParticles.rotation.y += 0.0005;
+        }
+        if (this.waterMesh) {
+            this.waterMesh.rotation.z += 0.0002;
+        }
+
+        this.updateHUD(nearestDist, nearestName);
+    }
+
+    updateHUD(nearestDist, nearestName) {
+        const heartsStr = '❤️'.repeat(Math.max(0, this.player.health)) + '🖤'.repeat(Math.max(0, 3 - this.player.health));
+        document.getElementById('hud-hearts').innerText = heartsStr;
+
+        const dashPct = Math.max(0, 100 - (this.player.dashCooldown / this.player.maxDashCooldown) * 100);
+        document.getElementById('hud-dash-bar').style.width = `${dashPct}%`;
+
+        document.getElementById('hud-pearls').innerText = state.pearls;
+
+        const compass = document.getElementById('compass-indicator');
+        const arrow = document.getElementById('compass-arrow');
+        if (nearestDist < 900) {
+            compass.innerText = `${nearestName}: a ${Math.round(nearestDist)}m`;
+            if (nearestDist < 6) {
+                compass.className = 'text-xs font-black text-emerald-400 animate-pulse';
+                arrow.innerText = '✨';
+            } else {
+                compass.className = 'text-xs font-bold text-amber-300';
+                arrow.innerText = '🧭';
+            }
+        } else {
+            compass.innerText = '¡Todos los fragmentos reunidos!';
+            compass.className = 'text-xs font-black text-emerald-300';
+            arrow.innerText = '✨';
+        }
+    }
+
+    render() {
+        this.renderer.render(this.scene, this.camera);
+    }
+}
+
+// Instanciar Juego
+const game = new SeaGameController();
+
+// --- 7. SISTEMA DE MENÚS Y EL ARMARIO ---
+function switchScreen(screenName) {
+    state.screen = screenName;
+    const screens = {
+        menu: document.getElementById('screen-menu'),
+        wardrobe: document.getElementById('screen-wardrobe'),
+        pause: document.getElementById('screen-pause'),
+        victory: document.getElementById('screen-victory'),
+        gameover: document.getElementById('screen-gameover')
+    };
+
+    Object.values(screens).forEach(s => s?.classList.add('hidden'));
+    const hud = document.getElementById('hud-container');
+
+    if (screenName === 'play') {
+        hud.classList.remove('hidden');
+    } else {
+        hud.classList.add('hidden');
+        if (screens[screenName]) screens[screenName].classList.remove('hidden');
+        if (document.pointerLockElement) document.exitPointerLock();
+    }
+
+    if (screenName === 'wardrobe') renderWardrobeUI();
+}
+
+function togglePause() {
+    state.isPaused = !state.isPaused;
+    document.getElementById('screen-pause').classList.toggle('hidden', !state.isPaused);
+    if (state.isPaused && document.pointerLockElement) document.exitPointerLock();
+}
+
+function switchWardrobeTab(tabKey) {
+    state.wardrobeTab = tabKey;
+    ['tails', 'headbands', 'tops'].forEach(k => {
+        const btn = document.getElementById(`tab-btn-${k}`);
+        if (k === tabKey) btn.classList.add('active');
+        else btn.classList.remove('active');
+    });
+    renderWardrobeUI();
+}
+
+function renderWardrobeUI() {
+    document.getElementById('wardrobe-pearls').innerText = `⚪ ${state.pearls}`;
+    const list = document.getElementById('wardrobe-options-list');
+    list.innerHTML = '';
+
+    let itemsSource = TAIL_SKINS;
+    let currentEquippedId = state.currentTail;
+
+    if (state.wardrobeTab === 'headbands') {
+        itemsSource = HEADBAND_SKINS;
+        currentEquippedId = state.currentHeadband;
+    } else if (state.wardrobeTab === 'tops') {
+        itemsSource = TOP_SKINS;
+        currentEquippedId = state.currentTop;
+    }
+
+    Object.entries(itemsSource).forEach(([key, itemData]) => {
+        const isEquipped = currentEquippedId === key;
+        const row = document.createElement('div');
+        row.className = `flex justify-between items-center p-3 rounded-xl border transition-all ${
+            isEquipped ? 'bg-sky-500/25 border-cyan-400 shadow-md' : 'bg-slate-900/70 border-sky-500/20 hover:border-sky-400/50'
+        }`;
+
+        // Construir miniatura gráfica 2D con los sprites PNG de la carpeta 'assets'
+        let thumbStyle = '';
+        if (state.wardrobeTab === 'tails') {
+            const scale = 42 / 346;
+            const bgW = Math.round(612 * scale);
+            const bgH = Math.round(408 * scale);
+            const posX = Math.round(-23 * scale);
+            const posY = Math.round(-18 * scale);
+            thumbStyle = `background-image: url('${itemData.asset}'); background-position: ${posX}px ${posY}px; background-size: ${bgW}px ${bgH}px; background-repeat: no-repeat; ${itemData.filter ? 'filter: ' + itemData.filter + ';' : ''}`;
+        } else if (state.wardrobeTab === 'headbands') {
+            const crop = itemData.crop;
+            const scale = 38 / Math.max(crop.w, crop.h);
+            const bgW = Math.round(612 * scale);
+            const bgH = Math.round(408 * scale);
+            const posX = Math.round(-crop.x * scale);
+            const posY = Math.round(-crop.y * scale);
+            thumbStyle = `background-image: url('${itemData.asset}'); background-position: ${posX}px ${posY}px; background-size: ${bgW}px ${bgH}px; background-repeat: no-repeat;`;
+        } else if (state.wardrobeTab === 'tops') {
+            const crop = itemData.crop;
+            const scale = 38 / Math.max(crop.w, crop.h);
+            const bgW = Math.round(554 * scale);
+            const bgH = Math.round(451 * scale);
+            const posX = Math.round(-crop.x * scale);
+            const posY = Math.round(-crop.y * scale);
+            thumbStyle = `background-image: url('${itemData.asset}'); background-position: ${posX}px ${posY}px; background-size: ${bgW}px ${bgH}px; background-repeat: no-repeat;`;
+        }
+
+        row.innerHTML = `
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-slate-950/80 border border-sky-400/40 flex-shrink-0 flex items-center justify-center overflow-hidden shadow-inner">
+                    <div class="w-10 h-10" style="${thumbStyle}"></div>
+                </div>
+                <div>
+                    <div class="font-bold text-sm text-gray-100">${itemData.name}</div>
+                    <div class="text-[11px] text-sky-300/80">${itemData.desc}</div>
+                </div>
+            </div>
+            <div>
+                ${
+                    itemData.unlocked 
+                        ? `<button class="btn-sea py-1 px-3.5 text-xs ${isEquipped ? 'bg-emerald-600 border-emerald-400 text-white font-black' : ''}">${isEquipped ? '✓ Equipada' : 'Equipar'}</button>`
+                        : `<button class="btn-sea btn-gold py-1 px-3 text-xs">⚪ ${itemData.cost}</button>`
+                }
+            </div>
+        `;
+
+        const btn = row.querySelector('button');
+        btn.onclick = () => {
+            if (itemData.unlocked) {
+                if (state.wardrobeTab === 'tails') state.currentTail = key;
+                else if (state.wardrobeTab === 'headbands') state.currentHeadband = key;
+                else if (state.wardrobeTab === 'tops') state.currentTop = key;
+
+                if (game && game.player) game.player.updateCustomization();
+                persistData();
+                renderWardrobeUI();
+            } else if (state.pearls >= itemData.cost) {
+                state.pearls -= itemData.cost;
+                itemData.unlocked = true;
+
+                if (state.wardrobeTab === 'tails') state.currentTail = key;
+                else if (state.wardrobeTab === 'headbands') state.currentHeadband = key;
+                else if (state.wardrobeTab === 'tops') state.currentTop = key;
+
+                if (game && game.player) game.player.updateCustomization();
+                persistData();
+                renderWardrobeUI();
+                game.showToast(`¡Has adquirido: ${itemData.name}!`);
+            } else {
+                alert(`¡Necesitas ${itemData.cost - state.pearls} perlas mágicas más! Recógelas en el arrecife o purificando erizos.`);
+            }
+        };
+
+        list.appendChild(row);
+    });
+
+    // Actualizar Previsualización Dinámica Compuesta
+    updateWardrobePreview();
+
+    const equippedItem = itemsSource[currentEquippedId] || Object.values(itemsSource)[0];
+    document.getElementById('wardrobe-item-name').innerText = equippedItem.name;
+    document.getElementById('wardrobe-item-desc').innerText = equippedItem.desc;
+}
+
+function updateWardrobePreview() {
+    const tailData = TAIL_SKINS[state.currentTail] || TAIL_SKINS.tail_default;
+    const topData = TOP_SKINS[state.currentTop] || TOP_SKINS.top_shells;
+    const headData = HEADBAND_SKINS[state.currentHeadband] || HEADBAND_SKINS.head_none;
+
+    const tailEl = document.getElementById('wardrobe-preview-tail');
+    const topEl = document.getElementById('wardrobe-preview-top');
+    const headEl = document.getElementById('wardrobe-preview-headband');
+
+    if (tailEl) {
+        const scale = 230 / 346;
+        const bgW = Math.round(612 * scale);
+        const bgH = Math.round(408 * scale);
+        const posX = Math.round(-23 * scale);
+        const posY = Math.round(-18 * scale);
+        tailEl.style.width = `${Math.round(129 * scale)}px`;
+        tailEl.style.height = `230px`;
+        tailEl.style.position = 'absolute';
+        tailEl.style.left = '50%';
+        tailEl.style.top = '50%';
+        tailEl.style.transform = 'translate(-50%, -50%)';
+        tailEl.style.backgroundImage = `url('${tailData.asset}')`;
+        tailEl.style.backgroundPosition = `${posX}px ${posY}px`;
+        tailEl.style.backgroundSize = `${bgW}px ${bgH}px`;
+        tailEl.style.backgroundRepeat = 'no-repeat';
+        tailEl.style.filter = tailData.filter || 'drop-shadow(0 0 16px rgba(56, 189, 248, 0.6))';
+    }
+
+    if (topEl) {
+        const tCrop = topData.crop;
+        const tScale = 0.40;
+        topEl.style.width = `${Math.round(tCrop.w * tScale)}px`;
+        topEl.style.height = `${Math.round(tCrop.h * tScale)}px`;
+        topEl.style.position = 'absolute';
+        topEl.style.left = '50%';
+        topEl.style.top = '34%';
+        topEl.style.transform = 'translate(-50%, -50%)';
+        topEl.style.backgroundImage = `url('${topData.asset}')`;
+        topEl.style.backgroundPosition = `-${Math.round(tCrop.x * tScale)}px -${Math.round(tCrop.y * tScale)}px`;
+        topEl.style.backgroundSize = `${Math.round(554 * tScale)}px ${Math.round(451 * tScale)}px`;
+        topEl.style.backgroundRepeat = 'no-repeat';
+        topEl.style.filter = 'drop-shadow(0 2px 5px rgba(0,0,0,0.6))';
+    }
+
+    if (headEl) {
+        const hCrop = headData.crop;
+        const hScale = 0.38;
+        headEl.style.width = `${Math.round(hCrop.w * hScale)}px`;
+        headEl.style.height = `${Math.round(hCrop.h * hScale)}px`;
+        headEl.style.position = 'absolute';
+        headEl.style.left = '50%';
+        headEl.style.top = '14%';
+        headEl.style.transform = 'translate(-50%, -50%)';
+        headEl.style.backgroundImage = `url('${headData.asset}')`;
+        headEl.style.backgroundPosition = `-${Math.round(hCrop.x * hScale)}px -${Math.round(hCrop.y * hScale)}px`;
+        headEl.style.backgroundSize = `${Math.round(612 * hScale)}px ${Math.round(408 * hScale)}px`;
+        headEl.style.backgroundRepeat = 'no-repeat';
+        headEl.style.filter = 'drop-shadow(0 2px 5px rgba(0,0,0,0.6))';
+    }
+}
+
+// Botones de Navegación
+document.getElementById('btn-start-game').onclick = () => {
+    audio.init();
+    game.startLevel1();
+};
+document.getElementById('btn-open-wardrobe').onclick = () => switchScreen('wardrobe');
+document.getElementById('btn-close-wardrobe').onclick = () => switchScreen('menu');
+
+document.getElementById('btn-pause').onclick = (e) => {
+    e.stopPropagation();
+    togglePause();
+};
+document.getElementById('btn-resume').onclick = togglePause;
+document.getElementById('btn-restart-level').onclick = () => { togglePause(); game.startLevel1(); };
+document.getElementById('btn-pause-wardrobe').onclick = () => { togglePause(); switchScreen('wardrobe'); };
+document.getElementById('btn-quit-menu').onclick = () => { togglePause(); switchScreen('menu'); };
+
+document.getElementById('btn-retry').onclick = () => {
+    audio.init();
+    game.startLevel1();
+};
+document.getElementById('btn-gameover-menu').onclick = () => switchScreen('menu');
+
+window.addEventListener('pointerdown', () => { audio.ensureRunning(); }, { passive: true });
+window.addEventListener('click', () => { audio.ensureRunning(); }, { passive: true });
+window.addEventListener('keydown', () => { audio.ensureRunning(); }, { passive: true });
+window.addEventListener('touchstart', () => { audio.ensureRunning(); }, { passive: true });
+
+document.getElementById('btn-free-swim').onclick = () => {
+    state.freeSwim = true;
+    switchScreen('play');
+    game.showToast("¡Modo Libre Activado! Nada por todo el arrecife.");
+};
+document.getElementById('btn-victory-wardrobe').onclick = () => switchScreen('wardrobe');
+document.getElementById('btn-victory-restart').onclick = () => game.startLevel1();
+
+// Bucle de Animación 3D
+function animate() {
+    requestAnimationFrame(animate);
+    game.update();
+    game.render();
+}
+animate();
+</script>
+</body>
+</html>
